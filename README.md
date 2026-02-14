@@ -244,8 +244,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📬 Contact
 
 **AGI Corporation**  
-- Website: [https://agicorp.ai](https://agicorp.ai)
-- Email: research@agicorp.ai
+- Website: [https://agicorp.network](https://agicorp.network)
+- Email: research@agicorp.network
 - GitHub: [@AGI-Corporation](https://github.com/AGI-Corporation)
 
 ---
