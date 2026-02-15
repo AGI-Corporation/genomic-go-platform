@@ -1,0 +1,9 @@
+requests
+python-dotenv
+crewai
+langchain
+kalibr
+web3
+pandas
+openai
+anthropic
