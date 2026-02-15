@@ -547,11 +547,17 @@ Join the DeSci community and contribute
 
 ## 📚 Documentation & Resources
 
-- **Documentation**: [docs.genomic.go](https://docs.genomic.go)
-- **API Reference**: [api.genomic.go](https://api.genomic.go)
-- **Community Forum**: [community.genomic.go](https://community.genomic.go)
+- **Documentation**: [docs.agicorp.network](https://docs.agicorp.network)- **API Reference**: [api.agicorp.network](https://api.agicorp.network)
+- **Community Forum**: [community.agicorp.network](https://community.agicorp.network)
 - **GitHub**: [github.com/AGI-Corporation/genomic-go-platform](https://github.com/AGI-Corporation/genomic-go-platform)
-- **Support**: support@genomic.go
+- **Support**: support@agicorp.network
+- 
+### Connect With Us
+
+- **Website**: [agicorp.network](https://agicorp.network)
+- **Twitter/X**: [@AGICorporation](https://twitter.com/AGICorporation)
+- **LinkedIn**: [AGI Corporation](https://linkedin.com/company/agi-corporation)
+- **GitHub**: [github.com/AGI-Corporation](https://github.com/AGI-Corporation)
 
 ---
 
