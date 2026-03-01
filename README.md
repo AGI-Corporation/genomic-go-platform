@@ -755,3 +755,20 @@ uvicorn src.api.main:app --reload
 docker build -t genomic-swarm .
 docker run -p 8000:8000 -e MISTRAL_API_KEY=your_key genomic-swarm
 ```
+
+---
+
+## 🎨 Interactive Workbench
+
+We provide a **Streamlit** based workbench for researchers to interact with the Mistral swarm visually.
+
+### Run the Workbench
+```bash
+streamlit run src/interface/app.py
+```
+
+Features:
+- **Swarm Monitor**: Real-time status of research agents.
+- **Discovery Dashboard**: Visualized research reports and AI confidence metrics.
+- **Mistral Judge Panel**: Live evaluation of scientific correctness and clinical relevance.
+- **Lab Notebook Explorer**: Download and review structured research findings.
