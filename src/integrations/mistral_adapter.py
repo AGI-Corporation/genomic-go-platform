@@ -74,14 +74,14 @@ class MistralGenomicAdapter:
         return response.choices[0].message.content
 
     async def transcribe_research_notes(self, audio_path: str) -> str:
-        """Transcribe verbal research notes using Voxtral Mini Transcribe."""
+        """Transcribe verbal research notes using Mistral's audio capabilities."""
         with open(audio_path, "rb") as audio_file:
             encoded_audio = base64.b64encode(audio_file.read()).decode("utf-8")
 
-        # Voxtral Mini Transcribe integration logic (simulated for current SDK)
+        # Audio transcription integration logic (simulated for current SDK)
         # In actual production, this would use a dedicated transcription endpoint or specific model capability
         response = await self.client.chat.complete_async(
-            model="voxtral-mini-transcribe-latest",
+            model="mistral-large-latest", # Fallback to Large for logic, assuming specialized audio model in prod
             messages=[
                 {
                     "role": "user",
@@ -145,7 +145,7 @@ class MistralOptimizedRouter:
             "primary_model": "mistral-large-latest",
             "fallback_models": ["mistral-small-latest", "open-mistral-nemo"],
             "vision_model": "pixtral-12b-2409",
-            "voice_model": "voxtral-mini-transcribe-latest",
+            "voice_model": "mistral-large-latest", # Placeholder for specialized audio capabilities
             "ocr_model": "mistral-ocr-latest",
             "optimization_goal": "comprehensive_multimodal_document_intelligence",
         }

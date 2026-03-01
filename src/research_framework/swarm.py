@@ -116,6 +116,18 @@ class GenomicSwarmFramework:
                 "COMPOUND_SCREEN",
                 f"Search for lead compounds targeting identified proteins for {indication}",
             ),
+            SwarmTask(
+                "VARIANT_ANALYSIS",
+                f"Analyze patient genomic variants relevant to {indication}",
+            ),
+            SwarmTask(
+                "SAFETY_ADME",
+                f"Predict safety and ADME profile for potential {indication} leads",
+            ),
+            SwarmTask(
+                "REGULATORY_PREP",
+                f"Prepare initial regulatory brief for {indication} clinical trial",
+            ),
         ]
 
         results = []

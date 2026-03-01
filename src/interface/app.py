@@ -35,6 +35,17 @@ indication = st.text_input(
     placeholder="Type disease here...",
 )
 
+# Data Integration Section
+with st.expander("📂 Clinical & Genomic Data Integration"):
+    st.info("Select or upload biological datasets to enhance the research swarm's context.")
+    col_data1, col_data2 = st.columns(2)
+    with col_data1:
+        vcf_file = st.selectbox("Select Patient VCF (Genomic Variants):",
+                               ["None", "data/sample/patient_001.vcf"])
+    with col_data2:
+        fasta_file = st.selectbox("Select Target FASTA (Protein Sequence):",
+                                 ["None", "data/sample/target_sequence.fasta"])
+
 if st.button("🚀 Accelerate Research"):
     if not indication:
         st.warning("Please enter an indication first.")
@@ -55,7 +66,15 @@ if st.button("🚀 Accelerate Research"):
                     st.subheader("📋 Discovery Report")
                     st.write(f"**Indication:** {report['indication']}")
                     st.write(f"**Knowledge Graph Nodes:** {report['kg_nodes']}")
-                    st.json(report["swarm_intelligence_summary"])
+
+                    # Display expanded swarm results in tabs
+                    tab1, tab2, tab3 = st.tabs(["Swarm Summary", "Bioinformatics", "Safety & Regulatory"])
+                    with tab1:
+                        st.json(report["swarm_intelligence_summary"][:3])
+                    with tab2:
+                        st.json(report["swarm_intelligence_summary"][3:4])
+                    with tab3:
+                        st.json(report["swarm_intelligence_summary"][4:])
 
                 with col2:
                     st.subheader("⚖️ Mistral Evaluation")

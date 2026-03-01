@@ -56,3 +56,45 @@ class LeadOptimizationAgent(BaseGenomicAgent):
         prompt = f"Propose lead compounds or chemical scaffolds for: {task.get('description')}."
         result = await self.mistral.analyze_genomic_data("", prompt)
         return {"role": self.role, "lead_compounds": result}
+
+
+class BioinformaticsAgent(BaseGenomicAgent):
+    """Agent specialized in variant interpretation and sequence analysis."""
+
+    def __init__(self, api_key: str = None):
+        super().__init__("Bioinformatics Scientist", api_key)
+
+    async def process_task(
+        self, task: Dict[str, Any], context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        prompt = f"Analyze genomic variants for clinical significance: {task.get('description')}."
+        result = await self.mistral.analyze_genomic_data("", prompt)
+        return {"role": self.role, "variant_analysis": result}
+
+
+class SafetyAgent(BaseGenomicAgent):
+    """Agent specialized in toxicity and ADME prediction."""
+
+    def __init__(self, api_key: str = None):
+        super().__init__("Safety & Toxicity Specialist", api_key)
+
+    async def process_task(
+        self, task: Dict[str, Any], context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        prompt = f"Evaluate the safety and potential toxicity profile for: {task.get('description')}."
+        result = await self.mistral.analyze_genomic_data("", prompt)
+        return {"role": self.role, "safety_assessment": result}
+
+
+class RegulatoryAgent(BaseGenomicAgent):
+    """Agent specialized in clinical trial submission and regulatory compliance."""
+
+    def __init__(self, api_key: str = None):
+        super().__init__("Regulatory Affairs Officer", api_key)
+
+    async def process_task(
+        self, task: Dict[str, Any], context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        prompt = f"Prepare regulatory summary and trial design considerations for: {task.get('description')}."
+        result = await self.mistral.analyze_genomic_data("", prompt)
+        return {"role": self.role, "regulatory_summary": result}

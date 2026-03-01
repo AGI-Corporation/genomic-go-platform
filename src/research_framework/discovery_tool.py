@@ -13,6 +13,9 @@ from src.research_framework.agents import (
     LiteratureAgent,
     TargetDiscoveryAgent,
     LeadOptimizationAgent,
+    BioinformaticsAgent,
+    SafetyAgent,
+    RegulatoryAgent,
 )
 from src.compound_library.compound_generator import CompoundGenerationAgent
 from src.research_framework.knowledge_graph import BiologicalKnowledgeGraph
@@ -39,6 +42,15 @@ class GenomicDiscoveryTool:
         )
         self.swarm.orchestrator.register_agent(
             "gen_agent", CompoundGenerationAgent(api_key)
+        )
+        self.swarm.orchestrator.register_agent(
+            "bio_agent", BioinformaticsAgent(api_key)
+        )
+        self.swarm.orchestrator.register_agent(
+            "safety_agent", SafetyAgent(api_key)
+        )
+        self.swarm.orchestrator.register_agent(
+            "reg_agent", RegulatoryAgent(api_key)
         )
 
     async def accelerate_research(self, indication: str):
