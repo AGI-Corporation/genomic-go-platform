@@ -245,7 +245,7 @@ jobs:
   all-checks:
     name: All Checks Passed
     runs-on: ubuntu-latest
-    needs: [lint, backend-tests, build, security]
+    needs: [lint, backend-tests, frontend-tests, type-check, build, security]
     if: always()
 
     steps:

@@ -16,3 +16,5 @@ xgboost
 requests
 mistralai
 langchain-mistralai
+networkx
+scikit-learn

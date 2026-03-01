@@ -697,3 +697,25 @@ tools = [
 ]
 response = await adapter.run_agent_task("Find inhibitors for the EGFR protein.", tools)
 ```
+
+---
+
+## 🏗️ Genomic Swarm Intelligence Framework
+
+We have built a deeply integrated R&D framework to meet the **Mistral Worldwide Hackathon** challenges. This framework closes the loop between unstructured genomic data and actionable drug discovery.
+
+### Framework Core Components:
+1. **Decentralized Swarms (`src/research_framework/swarm.py`)**: Orchestrates specialized agent roles (Literature Reviewer, Target Identifier, Lead Chemist) using Mistral Large's sophisticated reasoning.
+2. **Biological Knowledge Graph (`src/research_framework/knowledge_graph.py`)**: A relational engine powered by `networkx` and Mistral Embeddings to predict novel gene-protein interactions.
+3. **Integrated Discovery Tool (`src/research_framework/discovery_tool.py`)**: A consolidated interface for rapid R&D acceleration.
+
+### How to use the Deep R&D Tool:
+```python
+from src.research_framework.discovery_tool import GenomicDiscoveryTool
+
+tool = GenomicDiscoveryTool()
+report = await tool.accelerate_research("Type 2 Diabetes")
+print(report['swarm_intelligence_summary'])
+```
+
+This framework is built to be modular, scalable, and agent-first, leveraging the best of **Mistral AI** for the future of decentralized science (DeSci).

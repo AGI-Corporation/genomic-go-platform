@@ -27,16 +27,6 @@ import qdrant_client
 from aiokafka import AIOKafkaConsumer
 from kafka import KafkaProducer
 from scipy.stats import beta, norm
-import pandas as pd
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from scipy.stats import beta, norm
-import qdrant_client
-from kafka import KafkaProducer
-from aiokafka import AIOKafkaConsumer
-import json
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -228,7 +218,6 @@ class AdaptiveTrialDesign:
             # Don't raise - alerting failure shouldn't stop trial
 
 
-
 class RealTimePatientMatcher:
     """
     AI-powered patient-to-trial matching with genomic and clinical features.
@@ -351,11 +340,12 @@ class SafetyMonitoringSystem:
         self.ae_buffer.append(event)
 
         # Calculate rolling AE rate
+        now_utc = datetime.now(timezone.utc)
         recent_aes = [
             e
             for e in self.ae_buffer
-            if datetime.fromisoformat(e["timestamp"])
-            > datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
+            if datetime.fromisoformat(e["timestamp"]).replace(tzinfo=timezone.utc)
+            > now_utc - timedelta(days=7)
         ]
 
         if len(recent_aes) > 10:  # Minimum for statistical power
