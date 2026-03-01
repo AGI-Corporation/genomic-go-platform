@@ -14,6 +14,7 @@ from src.research_framework.agents import (
     TargetDiscoveryAgent,
     LeadOptimizationAgent,
 )
+from src.compound_library.compound_generator import CompoundGenerationAgent
 from src.research_framework.knowledge_graph import BiologicalKnowledgeGraph
 from src.integrations.mistral_adapter import MistralGenomicAdapter
 
@@ -33,6 +34,9 @@ class GenomicDiscoveryTool:
         )
         self.swarm.orchestrator.register_agent(
             "lead_agent", LeadOptimizationAgent(api_key)
+        )
+        self.swarm.orchestrator.register_agent(
+            "gen_agent", CompoundGenerationAgent(api_key)
         )
 
     async def accelerate_research(self, indication: str):

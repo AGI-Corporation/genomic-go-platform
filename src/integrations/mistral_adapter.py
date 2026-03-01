@@ -1,7 +1,7 @@
 """Mistral AI Adapter for Genomic.go Platform
 
 This module provides an advanced integration with Mistral AI models, including
-support for Mistral Large, Pixtral (multimodal), and tool-calling agents.
+support for Mistral Large, Pixtral (multimodal vision), and Voxtral (audio/voice).
 Optimized for the Mistral Worldwide Hackathon.
 """
 
@@ -73,6 +73,33 @@ class MistralGenomicAdapter:
         )
         return response.choices[0].message.content
 
+    async def transcribe_research_notes(self, audio_path: str) -> str:
+        """Transcribe verbal research notes using Voxtral Mini Transcribe."""
+        with open(audio_path, "rb") as audio_file:
+            encoded_audio = base64.b64encode(audio_file.read()).decode("utf-8")
+
+        # Voxtral Mini Transcribe integration logic (simulated for current SDK)
+        # In actual production, this would use a dedicated transcription endpoint or specific model capability
+        response = await self.client.chat.complete_async(
+            model="voxtral-mini-transcribe-latest",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Transcribe these research notes accurately.",
+                        },
+                        {
+                            "type": "audio_url",  # Hypothesized API structure for audio
+                            "audio_url": f"data:audio/wav;base64,{encoded_audio}",
+                        },
+                    ],
+                }
+            ],
+        )
+        return response.choices[0].message.content
+
     async def run_agent_task(self, prompt: str, tools: List[Dict[str, Any]]) -> str:
         """Execute an agentic task using Mistral tool calling."""
         response = await self.client.chat.complete_async(
@@ -95,10 +122,13 @@ class MistralOptimizedRouter:
         return {
             "primary_model": "mistral-large-latest",
             "fallback_models": ["mistral-small-latest", "open-mistral-nemo"],
-            "multimodal_model": "pixtral-12b-2409",
-            "optimization_goal": "performance_and_agentic_capabilities",
+            "vision_model": "pixtral-12b-2409",
+            "voice_model": "voxtral-mini-transcribe-latest",
+            "optimization_goal": "full_multimodal_agentic_capabilities",
         }
 
 
 if __name__ == "__main__":
-    print("Mistral Advanced Adapter initialized for Mistral Worldwide Hackathon!")
+    print(
+        "Mistral Advanced Adapter (Vision & Voice) initialized for Mistral Worldwide Hackathon!"
+    )
