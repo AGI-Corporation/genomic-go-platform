@@ -92,3 +92,21 @@ st.write(
 )
 if st.checkbox("Show Graph Nodes"):
     st.write(list(tool.kg.graph.nodes(data=True)))
+
+# Augmented Reality Integration
+st.divider()
+st.subheader("🕶️ DeSci AR Visualization")
+st.info("Holographic protein structure rendering powered by DeSci Virtual Labs")
+
+col_ar1, col_ar2 = st.columns([1, 2])
+with col_ar1:
+    molecule_id = st.text_input("Enter Molecule ID for AR:", value="BACE1_inhibitor_01")
+    if st.button("Generate AR View"):
+        from src.visualization.ar_adapter import ARAdapter
+        ar = ARAdapter()
+        config = ar.generate_holographic_config(molecule_id)
+        st.success("AR Scene Generated!")
+        st.json(config)
+
+with col_ar2:
+    st.image("https://placehold.co/600x400?text=AR+Holographic+Preview+Waiting", caption="Spatial Preview")
