@@ -6,7 +6,7 @@ ensuring interoperability across the agent swarm.
 
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class GenomicMarker(BaseModel):
@@ -27,7 +27,7 @@ class PatientData(BaseModel):
     genomic_variants: List[GenomicMarker]
     comorbidities: List[str]
     biomarkers: Dict[str, float]
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ResearchDiscovery(BaseModel):

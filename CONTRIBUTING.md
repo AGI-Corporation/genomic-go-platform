@@ -184,30 +184,18 @@ When contributing algorithms:
 ```
 genomic-go-platform/
 ├── .github/                 # GitHub workflows and templates
-│   ├── workflows/           # CI/CD pipelines
-│   └── ISSUE_TEMPLATE/      # Issue templates
-├── backend/                 # Backend services
-│   ├── agents/              # Agent swarm implementations
-│   ├── api/                 # REST API endpoints
-│   ├── biomcp/              # Bio-MCP protocol
-│   └── core/                # Core infrastructure
-├── frontend/                # React frontend
-│   ├── components/          # React components
-│   ├── pages/               # Page components
-│   └── services/            # API clients
 ├── docs/                    # Documentation
-│   ├── api/                 # API documentation
-│   ├── architecture/        # Architecture diagrams
-│   └── guides/              # User guides
-├── scripts/                 # Build and deployment scripts
+├── src/                     # Source code
+│   ├── api/                 # REST API endpoints
+│   ├── clinical_trials/     # Trial optimization engine
+│   ├── compound_library/    # Drug design and search
+│   ├── integrations/        # Mistral and Bio-MCP integrations
+│   ├── interface/           # Streamlit workbench
+│   ├── research_framework/  # Swarm and Knowledge Graph
+│   └── schemas/             # Pydantic data models
 ├── tests/                   # Test suites
-│   ├── unit/                # Unit tests
-│   ├── integration/         # Integration tests
-│   └── e2e/                 # End-to-end tests
-└── tools/                   # Research tools
-    ├── alphafold/           # AlphaFold integration
-    ├── molecular-dynamics/  # MD simulation tools
-    └── compound-generation/ # Drug design tools
+├── Dockerfile               # Production containerization
+└── requirements.txt         # Project dependencies
 ```
 
 ## 🔄 Development Workflow

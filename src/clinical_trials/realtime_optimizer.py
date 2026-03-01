@@ -234,7 +234,9 @@ class RealTimePatientMatcher:
             from src.integrations.mistral_adapter import MistralGenomicAdapter
 
             adapter = MistralGenomicAdapter()
-            patient_text = f"Patient {patient.patient_id}, age {patient.age}, sex {patient.sex}. "
+            patient_text = (
+                f"Patient {patient.patient_id}, age {patient.age}, sex {patient.sex}. "
+            )
             patient_text += f"Comorbidities: {', '.join(patient.comorbidities)}. "
             patient_text += f"Biomarkers: {patient.biomarkers}."
 
