@@ -13,7 +13,7 @@ import uuid
 from dataclasses import dataclass, asdict
 from enum import Enum
 from typing import Dict, List, Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class NANDAProtocolCoordinator:
             "capabilities": capabilities,
             "endpoint": endpoint,
             "status": "online",
-            "last_heartbeat": datetime.utcnow().isoformat(),
+            "last_heartbeat": datetime.now(timezone.utc).isoformat(),
             "load": 0,
         }
         logger.info(f"Node {node_id} registered with capabilities {capabilities}")
@@ -68,7 +68,7 @@ class NANDAProtocolCoordinator:
             task_id=task_id,
             sequence=sequence,
             model_seeds=model_seeds,
-            created_at=datetime.utcnow().isoformat(),
+            created_at=datetime.now(timezone.utc).isoformat(),
         )
         self.active_tasks[task_id] = task
 
@@ -107,9 +107,12 @@ class NANDAProtocolCoordinator:
     async def monitor_health(self):
         """Continuously monitor node health and handle failovers"""
         while True:
-            current_time = datetime.utcnow()
+            current_time = datetime.now(timezone.utc)
             for node_id, node in self.nodes.items():
                 last_hb = datetime.fromisoformat(node["last_heartbeat"])
+                # Handle potential naive/aware comparison if needed, but here we expect ISO format from aware
+                if last_hb.tzinfo is None:
+                    last_hb = last_hb.replace(tzinfo=timezone.utc)
                 if (current_time - last_hb).total_seconds() > self.heartbeat_timeout:
                     if node["status"] == "online":
                         node["status"] = "offline"

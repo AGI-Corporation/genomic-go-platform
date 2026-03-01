@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime
+from datetime import datetime, timezone
 import sys
 import os
 
@@ -161,7 +161,7 @@ class TestSafetyMonitoringSystem:
         event = {
             "trial_id": "TEST-001",
             "severity": 3,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         await monitor.process_adverse_event(event)
         assert len(monitor.ae_buffer) == 1

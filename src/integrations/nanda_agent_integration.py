@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ class NANDAAgentIntegration:
                     "specialization": specialization,
                     "endpoint": f"https://{self.config.domain}",
                     "status": "active",
-                    "deployed_at": datetime.utcnow().isoformat(),
+                    "deployed_at": datetime.now(timezone.utc).isoformat(),
                 }
 
                 self.deployed_agents[agent_info["agent_id"]] = agent_info
@@ -345,7 +345,7 @@ class GenomicResearchAgentSwarm:
         return {
             "target": target_protein,
             "results": results,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
 
