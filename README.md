@@ -10,12 +10,15 @@
 
 **Genomic.go** is a cutting-edge platform that leverages modular AI agent swarms—intelligent, specialized collectives—that collaborate through a sophisticated interoperability framework to tackle complex scientific challenges in genomics, proteomics, and drug development.
 
-The platform integrates:
-- **AlphaFold3** for protein structure prediction
-- **Molecular dynamics simulations** for biological system behavior modeling
-- **Compound generation** with ADMET validation
-- **Immersive AR/VR visualization** through DeSci Virtual Labs
-- **AgentX orchestration hub** for unified agent management
+The platform is now fully optimized for the **Mistral Worldwide Hackathon**, featuring deep integration with the Mistral AI ecosystem.
+
+### 🌟 Key Integrations:
+- **Mistral Large & Pixtral**: Advanced reasoning and multimodal analysis (vision/voice) for complex biological data.
+- **Genomic Swarm Intelligence**: A decentralized framework for autonomous R&D pipelines.
+- **AlphaFold3**: High-accuracy protein structure prediction.
+- **Biological Knowledge Graph**: Relational discovery powered by Mistral semantic embeddings.
+- **Interoperable Schemas**: Pydantic-based biological and research data models.
+- **Immersive Visualization**: Streamlit-based Swarm Workbench and DeSci Virtual Labs.
 
 ---
 
@@ -31,11 +34,10 @@ Built on a **modular, service-oriented architecture** using TypeScript full-stac
 - High-availability architecture
 
 #### 2️⃣ **Agent Framework**
-- Multi-agent architecture with specialized AI agents
-- Dynamic swarm formation and collaboration
-- Structured communication protocols
-- 35 distinct agent swarms across 4-5 major categories
-- ~75 specialized agents per swarm
+- **Mistral-Powered Swarms**: Multi-agent architecture using Mistral Large's native tool-calling.
+- **Specialized Roles**: Literature Reviewers, Target ID Specialists, and Lead Optimization Chemists.
+- **Dynamic Collaboration**: Real-time task delegation and state synchronization.
+- **Interoperable Schemas**: Standardized Pydantic models for seamless agent-to-agent communication.
 
 #### 3️⃣ **Interoperability Hub & Bio-MCP**
 - **Biological Microservices Communication Protocol (Bio-MCP)**
@@ -44,10 +46,10 @@ Built on a **modular, service-oriented architecture** using TypeScript full-stac
 - Event-driven architecture
 
 #### 4️⃣ **Visualization & Interface Layer**
-- React-based component architecture
-- DeSci Virtual Labs for immersive AR/VR molecular exploration
-- Enhanced Research Workbench
-- Customizable layouts and interfaces
+- **Streamlit Swarm Workbench**: Interactive dashboard for real-time orchestration and discovery.
+- **Research CLI**: Terminal-based interface for rapid pipeline execution.
+- **FastAPI Gateway**: Production-ready RESTful API for decentralized collaboration.
+- **DeSci Virtual Labs**: Immersive AR/VR molecular exploration.
 
 ---
 
@@ -263,6 +265,24 @@ Built with support from the global scientific research community and aligned wit
 
 **© 2025 AGI Corporation. All rights reserved.**
 
+---
+
+## 🏗️ Genomic Swarm Intelligence Framework
+
+We have built a deeply integrated R&D framework to meet the **Mistral Worldwide Hackathon** challenges. This framework closes the loop between unstructured genomic data and actionable drug discovery.
+
+### Framework Core Components:
+1. **Decentralized Swarms (`src/research_framework/swarm.py`)**: Orchestrates specialized agent roles (Literature Reviewer, Target Identifier, Lead Chemist) using Mistral Large's sophisticated reasoning and native tool-calling.
+2. **Biological Knowledge Graph (`src/research_framework/knowledge_graph.py`)**: A relational engine powered by `networkx` and Mistral Embeddings to predict novel gene-protein interactions.
+3. **Multimodal Insights (Pixtral)**: Agents interpret complex biological visualizations (protein structures, microscopy) using `pixtral-12b`.
+4. **LLM-as-a-Judge Evaluation**: Automated grading of research accuracy and impact using Mistral's structured output parsing.
+5. **Integrated Discovery Tool (`src/research_framework/discovery_tool.py`)**: A consolidated interface for rapid R&D acceleration with automated experiment tracking.
+
+### 🎨 Interactive Workbench
+Researchers can interact with the swarm through a full-featured dashboard:
+```bash
+streamlit run src/interface/app.py
+```
 
 ## 🚀 Core Technology Integrations
 

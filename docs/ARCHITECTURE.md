@@ -24,11 +24,18 @@ Genomic.go is a cloud-native, microservices-based platform leveraging AI agent s
 └─────────────────────────────────────────────────────────────────┘
                               |
 ┌─────────────────────────────────────────────────────────────────┐
-│                      Specialized Agent Layer                     │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐       │
-│  │Research│ │Compound│ │Genomics│ │Protocol│ │  GWAS  │       │
-│  │ Agent  │ │ Agent  │ │ Agent  │ │ Agent  │ │ Agent  │       │
-│  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘       │
+│                      Mistral Agent Swarm Layer                  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐ │
+│  │Literature│ │Target ID │ │Lead Chem │ │   Judge  │ │  GWAS  │ │
+│  │ (Mistral)│ │ (Mistral)│ │ (Mistral)│ │ (Mistral)│ │ Agent  │ │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                              |
+┌─────────────────────────────────────────────────────────────────┐
+│                       Interactive Workbench                     │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                  Streamlit Research Dashboard             │  │
+│  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
                               |
 ┌─────────────────────────────────────────────────────────────────┐
@@ -51,14 +58,14 @@ Genomic.go is a cloud-native, microservices-based platform leveraging AI agent s
 
 ### 1. **Agent Orchestration System**
 
-#### AgentX Hub
-- **Purpose**: Central orchestration and coordination of 35 specialized agent swarms
-- **Technology**: Python, LangGraph, Redis
+#### Genomic Swarm Orchestrator
+- **Purpose**: Decentralized coordination of specialized research agents.
+- **Intelligence**: Mistral Large (Native Tool-Calling).
 - **Key Features**:
-  - Dynamic agent provisioning
-  - Task routing and load balancing
-  - Agent state management
-  - Real-time monitoring and observability
+  - Autonomous task delegation based on agent capabilities.
+  - Multi-agent state synchronization.
+  - LLM-as-a-Judge research evaluation.
+  - Integrated "Lab Notebook" experiment tracking.
 
 #### Kalibr Router
 - **Purpose**: Intelligent LLM routing based on task complexity
@@ -77,19 +84,22 @@ Genomic.go is a cloud-native, microservices-based platform leveraging AI agent s
   - Hierarchical agent structures
   - Shared memory and context
 
-### 2. **Specialized Agent Swarms**
+### 2. **Mistral-Native Specialized Agents**
 
-#### Research Discovery Agents (8 agents)
-- Literature analysis and summarization
-- Patent landscape mapping
-- Clinical trial data extraction
-- Regulatory compliance checking
+#### Literature Reviewers (Mistral Large)
+- Automated PubMed/bioRxiv scanning.
+- Clinical trial document extraction using Mistral OCR.
+- Verbal note transcription via Voxtral.
 
-#### Compound Library Agents (7 agents)
-- Molecular structure generation
-- ADMET property prediction
-- Compound similarity search
-- Toxicity assessment
+#### Target Discovery Specialists (Mistral Large)
+- Multi-omic data integration.
+- Relational reasoning via Biological Knowledge Graph.
+- GWAS variant significance analysis.
+
+#### Lead Optimization Chemists (Mistral Large)
+- De novo lead compound generation.
+- Chemical scaffold optimization.
+- Protein-ligand docking analysis (Pixtral).
 
 #### Genomics Analysis Agents (6 agents)
 - Variant calling and annotation

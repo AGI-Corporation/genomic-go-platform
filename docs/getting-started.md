@@ -6,10 +6,10 @@ Welcome to the Genomic.go Platform! This guide will help you set up and start us
 
 ### Prerequisites
 
-- Python 3.9 or higher
+- Python 3.10 or higher
 - pip package manager
 - Git
-- API keys for required services (OpenAI, Anthropic, etc.)
+- Mistral API Key (`MISTRAL_API_KEY`)
 - Docker (optional, for containerized deployment)
 
 ### Installation
@@ -46,11 +46,14 @@ cp .env.example .env
 ### Running the Platform
 
 ```bash
-# Start the platform
-python main.py
+# Start the interactive Streamlit workbench
+streamlit run src/interface/app.py
 
-# Or using Docker
-docker-compose up
+# Run the API server
+uvicorn src.api.main:app --reload
+
+# Execute a discovery pipeline via CLI
+python3 src/research_framework/cli.py "Cystic Fibrosis"
 ```
 
 ## 📚 Core Concepts
@@ -76,34 +79,19 @@ The platform uses AI agent swarms for distributed research tasks:
 
 ## 🔬 Your First Research Project
 
-### Example: Drug Target Discovery
+### Example: Mistral-Powered Discovery
 
 ```python
-from genomic_platform import ResearchPipeline
-from genomic_platform.agents import KalibrRouter
+from src.research_framework.discovery_tool import GenomicDiscoveryTool
 
-# Initialize the platform
-pipeline = ResearchPipeline(
-    domain="drug_discovery",
-    agent_framework="kalibr"
-)
+# Initialize the tool
+tool = GenomicDiscoveryTool()
 
-# Define research query
-query = """
-Find potential drug targets for Alzheimer's disease 
-by analyzing protein-protein interactions in neuronal pathways
-"""
+# Run the end-to-end R&D pipeline
+report = await tool.accelerate_research("Alzheimer's Disease")
 
-# Run the research pipeline
-results = pipeline.execute(
-    query=query,
-    agents=35,  # Use 35 AI agents in swarm
-    blockchain_tracking=True
-)
-
-# Mint IP-NFT for your discovery
-ip_nft = pipeline.mint_ip_nft(results)
-print(f"Your IP-NFT: {ip_nft['transaction_hash']}")
+# View the AI-generated evaluation
+print(report['evaluation']['scientific_accuracy'])
 ```
 
 ## 🎯 Next Steps
@@ -131,3 +119,10 @@ print(f"Your IP-NFT: {ip_nft['transaction_hash']}")
 ---
 
 **Ready to accelerate your research? Let's get started! 🚀**
+
+### 🤖 Multimodal Research (Vision & Voice)
+1. **Analyze Imagery**: Use the `MistralGenomicAdapter` to interpret protein folds or microscope data.
+2. **Audio Data**: Transcribe lab notes using `transcribe_research_notes` (Voxtral).
+
+### ⚖️ Automated Quality Control
+Every discovery is automatically graded by the **Mistral Judge** for scientific accuracy and clinical relevance, ensuring high-fidelity research outputs.
