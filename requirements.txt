@@ -14,3 +14,5 @@ scipy
 numpy
 xgboost
 requests
+mistralai
+langchain-mistralai

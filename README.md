@@ -648,3 +648,25 @@ This platform embraces **open science principles** while protecting intellectual
 - ✅ Accelerate global scientific progress
 
 ---
+
+---
+
+## 🚀 Mistral Worldwide Hackathon Optimization
+
+This branch (`hackathon/mistral-genomic-swarm`) is specifically optimized for the **Mistral Worldwide Hackathon**.
+
+### Key Hackathon Enhancements
+- **Mistral Large Integration**: Deep integration with Mistral Large for complex genomic reasoning.
+- **Cost-Efficient Routing**: Specialized `MistralOptimizedRouter` to prioritize Mistral models, achieving better performance-to-cost ratios.
+- **Specialized Adapters**: New `MistralGenomicAdapter` for processing large-scale genomic datasets with Mistral's long-context windows.
+
+### Getting Started (Hackathon Edition)
+1. Set your Mistral API Key: `export MISTRAL_API_KEY=your_key`
+2. Use the new adapter:
+```python
+from src.integrations.mistral_adapter import MistralGenomicAdapter
+
+adapter = MistralGenomicAdapter()
+llm = adapter.get_langchain_model()
+# Your genomic research code here
+```
