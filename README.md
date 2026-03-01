@@ -670,3 +670,30 @@ adapter = MistralGenomicAdapter()
 llm = adapter.get_langchain_model()
 # Your genomic research code here
 ```
+
+### 🤖 Agentic & Multimodal Capabilities (Mistral Edition)
+The `MistralGenomicAdapter` now supports:
+- **Pixtral Integration**: Multimodal analysis of protein structures and experimental images using `pixtral-12b`.
+- **Function Calling Agents**: Native tool-calling support using Mistral Large to coordinate research tasks.
+- **Enhanced Context**: Optimized for Mistral's long-context windows, perfect for mining entire clinical trial documents.
+
+#### Image Analysis Example:
+```python
+# Analyze a protein structure visualization
+result = await adapter.analyze_biological_image("path/to/structure.jpg", "Describe the binding site features.")
+```
+
+#### Tool-Calling Agent Example:
+```python
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_compounds",
+            "description": "Search the Qdrant compound library",
+            "parameters": { ... }
+        }
+    }
+]
+response = await adapter.run_agent_task("Find inhibitors for the EGFR protein.", tools)
+```

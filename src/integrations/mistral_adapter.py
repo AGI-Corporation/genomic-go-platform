@@ -1,17 +1,19 @@
 """Mistral AI Adapter for Genomic.go Platform
 
-This module provides an integration with Mistral AI models to optimize
-genomic analysis and agent reasoning during the Mistral Worldwide Hackathon.
+This module provides an advanced integration with Mistral AI models, including
+support for Mistral Large, Pixtral (multimodal), and tool-calling agents.
+Optimized for the Mistral Worldwide Hackathon.
 """
 
 import os
-from typing import List, Dict, Any, Optional
+import base64
+from typing import List, Dict, Any, Optional, Union
 from mistralai import Mistral
 from langchain_mistralai import ChatMistralAI
 
 
 class MistralGenomicAdapter:
-    """Adapter for Mistral AI models specialized for genomic research."""
+    """Advanced Adapter for Mistral AI models specialized for genomic research."""
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("MISTRAL_API_KEY")
@@ -49,6 +51,38 @@ class MistralGenomicAdapter:
         )
         return response.data[0].embedding
 
+    async def analyze_biological_image(self, image_path: str, prompt: str) -> str:
+        """Analyze biological images (e.g., protein structures, gels) using Pixtral."""
+        with open(image_path, "rb") as image_file:
+            encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
+
+        response = await self.client.chat.complete_async(
+            model="pixtral-12b-2409",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": f"data:image/jpeg;base64,{encoded_image}",
+                        },
+                    ],
+                }
+            ],
+        )
+        return response.choices[0].message.content
+
+    async def run_agent_task(self, prompt: str, tools: List[Dict[str, Any]]) -> str:
+        """Execute an agentic task using Mistral tool calling."""
+        response = await self.client.chat.complete_async(
+            model="mistral-large-latest",
+            messages=[{"role": "user", "content": prompt}],
+            tools=tools,
+            tool_choice="auto",
+        )
+        return response.choices[0].message.content
+
 
 class MistralOptimizedRouter:
     """Mistral-optimized routing for the Kalibr framework."""
@@ -60,10 +94,11 @@ class MistralOptimizedRouter:
         """Returns configuration for Kalibr router to prioritize Mistral models."""
         return {
             "primary_model": "mistral-large-latest",
-            "fallback_models": ["open-mistral-7b", "mistral-small-latest"],
-            "optimization_goal": "cost_efficiency_for_genomics",
+            "fallback_models": ["mistral-small-latest", "open-mistral-nemo"],
+            "multimodal_model": "pixtral-12b-2409",
+            "optimization_goal": "performance_and_agentic_capabilities",
         }
 
 
 if __name__ == "__main__":
-    print("Mistral Adapter initialized for Mistral Worldwide Hackathon!")
+    print("Mistral Advanced Adapter initialized for Mistral Worldwide Hackathon!")
