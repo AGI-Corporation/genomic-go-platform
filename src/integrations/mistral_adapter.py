@@ -100,6 +100,18 @@ class MistralGenomicAdapter:
         )
         return response.choices[0].message.content
 
+    async def extract_document_data(self, doc_path: str) -> str:
+        """Extract structured data from clinical/research PDFs using Mistral OCR."""
+        # This uses the specialized Mistral OCR 3 model for high-fidelity document understanding
+        with open(doc_path, "rb") as doc_file:
+            encoded_doc = base64.b64encode(doc_file.read()).decode("utf-8")
+
+        response = await self.client.ocr.process_async(
+            model="mistral-ocr-latest",
+            document={"content": encoded_doc, "type": "pdf"},
+        )
+        return response.pages[0].markdown  # Simplified for hackathon
+
     async def run_agent_task(self, prompt: str, tools: List[Dict[str, Any]]) -> str:
         """Execute an agentic task using Mistral tool calling."""
         response = await self.client.chat.complete_async(
@@ -124,7 +136,8 @@ class MistralOptimizedRouter:
             "fallback_models": ["mistral-small-latest", "open-mistral-nemo"],
             "vision_model": "pixtral-12b-2409",
             "voice_model": "voxtral-mini-transcribe-latest",
-            "optimization_goal": "full_multimodal_agentic_capabilities",
+            "ocr_model": "mistral-ocr-latest",
+            "optimization_goal": "comprehensive_multimodal_document_intelligence",
         }
 
 
