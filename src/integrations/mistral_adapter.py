@@ -112,6 +112,16 @@ class MistralGenomicAdapter:
         )
         return response.pages[0].markdown  # Simplified for hackathon
 
+    async def parse_structured_output(self, prompt: str, response_format: Any) -> Any:
+        """Parse structured output from Mistral using a Pydantic model."""
+        response = await self.client.chat.parse_async(
+            model="mistral-large-latest",
+            messages=[{"role": "user", "content": prompt}],
+            response_format=response_format,
+            temperature=0,
+        )
+        return response.choices[0].message.parsed
+
     async def run_agent_task(self, prompt: str, tools: List[Dict[str, Any]]) -> str:
         """Execute an agentic task using Mistral tool calling."""
         response = await self.client.chat.complete_async(

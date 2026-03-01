@@ -16,6 +16,7 @@ from src.research_framework.agents import (
 )
 from src.compound_library.compound_generator import CompoundGenerationAgent
 from src.research_framework.knowledge_graph import BiologicalKnowledgeGraph
+from src.research_framework.evaluation import ResearchJudge
 from src.integrations.mistral_adapter import MistralGenomicAdapter
 
 
@@ -26,6 +27,7 @@ class GenomicDiscoveryTool:
         self.swarm = GenomicSwarmFramework()
         self.kg = BiologicalKnowledgeGraph(api_key)
         self.mistral = MistralGenomicAdapter(api_key)
+        self.judge = ResearchJudge(api_key)
 
         # Register specialized agents
         self.swarm.orchestrator.register_agent("lit_agent", LiteratureAgent(api_key))
@@ -53,15 +55,24 @@ class GenomicDiscoveryTool:
             indication, "disease", {"description": f"Target disease: {indication}"}
         )
 
-        # 3. Compile Final Report
+        # 3. Automated Evaluation (LLM-as-a-Judge)
+        print("Evaluating research quality using Mistral Judge...")
+        evaluation = await self.judge.evaluate_discovery(
+            query=f"Discover therapeutic insights for {indication}",
+            context=f"Genomic and literature data processed for {indication}",
+            findings=str(swarm_results),
+        )
+
+        # 4. Compile Final Report
         report = {
             "indication": indication,
             "swarm_intelligence_summary": swarm_results,
+            "evaluation": evaluation.model_dump(),
             "kg_nodes": len(self.kg.graph.nodes),
             "status": "research_accelerated",
         }
 
-        # 4. Lab Notebook: Persistence
+        # 5. Lab Notebook: Persistence
         self._save_to_notebook(report)
 
         return report
