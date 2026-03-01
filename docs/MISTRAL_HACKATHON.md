@@ -17,6 +17,7 @@ Integration with `pixtral-12b` allows our agents to "see" and interpret complex 
 ## 🚀 Key Framework Features
 
 - **Automated Discovery Pipeline**: Run end-to-end R&D acceleration from a single command.
+- **Structured Data Schemas**: Standardized biological entities using Pydantic for swarm interoperability (`src/schemas/`).
 - **Mistral-Optimized Router**: Cost-efficient LLM routing prioritizing Mistral's high-performance models.
 - **Lab Notebook Tracking**: Automated persistence of all agent decisions and research findings.
 - **Research CLI**: A dedicated terminal interface for rapid experimentation.

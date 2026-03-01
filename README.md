@@ -719,3 +719,18 @@ print(report['swarm_intelligence_summary'])
 ```
 
 This framework is built to be modular, scalable, and agent-first, leveraging the best of **Mistral AI** for the future of decentralized science (DeSci).
+
+---
+
+## 📋 Data Schemas & Standardization
+
+To ensure high-fidelity communication between agents, we have implemented a standardized schema layer (`src/schemas/`) using **Pydantic**.
+
+### Core Schemas:
+- **GenomicMarker**: Precise representation of genetic variants and their clinical significance.
+- **PatientData**: Unified format for patient profiles, integrating clinical history with multi-omic data.
+- **ResearchDiscovery**: A structured output format for research reports, facilitating machine-readability.
+- **MistralConfig**: Typed configuration for AI model parameters and routing strategies.
+
+### Integration Details
+The `GenomicDiscoveryTool` now utilizes these schemas to validate all inputs and outputs, providing a robust foundation for building production-grade scientific tools.
