@@ -18,3 +18,6 @@ mistralai
 langchain-mistralai
 networkx
 scikit-learn
+fastapi
+uvicorn[standard]
+python-multipart

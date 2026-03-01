@@ -734,3 +734,24 @@ To ensure high-fidelity communication between agents, we have implemented a stan
 
 ### Integration Details
 The `GenomicDiscoveryTool` now utilizes these schemas to validate all inputs and outputs, providing a robust foundation for building production-grade scientific tools.
+
+---
+
+## 🌐 API & Deployment
+
+The Genomic Swarm Framework now includes a production-ready **FastAPI** gateway and is fully containerized.
+
+### API Quick Start
+```bash
+# Start the API server
+uvicorn src.api.main:app --reload
+```
+
+- **POST /discover/indication**: Run the end-to-end R&D pipeline.
+- **GET /agents/status**: Monitor the health and composition of your research swarm.
+
+### Docker Deployment
+```bash
+docker build -t genomic-swarm .
+docker run -p 8000:8000 -e MISTRAL_API_KEY=your_key genomic-swarm
+```
