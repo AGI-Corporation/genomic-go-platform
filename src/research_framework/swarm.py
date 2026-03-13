@@ -5,6 +5,7 @@ enabling collaborative genomic discovery through specialized swarms.
 """
 
 import asyncio
+import json
 from typing import List, Dict, Any, Optional, Protocol
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
@@ -75,23 +76,36 @@ class SwarmOrchestrator:
 
         # Step 1: Use Mistral to decide agent assignment via tool calling
         prompt = f"Decide which agent is best for this genomic task: {task.description}"
-        decision = await self.mistral.run_agent_task(prompt, tools)
+        message = await self.mistral.run_agent_task(prompt, tools)
+
+        # Extract agent assignment from tool calls
+        target_agent = None
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                if tool_call.function.name == "assign_to_agent":
+                    args = json.loads(tool_call.function.arguments)
+                    target_agent = args.get("agent_id")
+                    break
 
         # Step 2: Execute task through recommended agents
         execution_result = {
             "task_id": task.id,
             "status": "completed",
-            "orchestrator_decision": decision,
+            "orchestrator_decision": str(message),
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-        # Mock agent execution
-        for agent_id, agent in self.agents.items():
-            # In hackathon mode, we often match based on ID substring if decision is empty
-            if agent_id in decision or task.id.lower() in agent_id.lower():
-                agent_result = await agent.process_task(asdict(task), context)
-                execution_result["agent_execution"] = agent_result
-                break
+        # Agent execution
+        if target_agent and target_agent in self.agents:
+            agent_result = await self.agents[target_agent].process_task(asdict(task), context)
+            execution_result["agent_execution"] = agent_result
+        else:
+            # Fallback: Mock agent execution based on task ID
+            for agent_id, agent in self.agents.items():
+                if task.id.lower() in agent_id.lower():
+                    agent_result = await agent.process_task(asdict(task), context)
+                    execution_result["agent_execution"] = agent_result
+                    break
 
         self.task_history.append(execution_result)
         return execution_result

@@ -1,0 +1,48 @@
+{
+  "indication": "Cystic Fibrosis",
+  "swarm_intelligence_summary": [
+    {
+      "status": "refined"
+    },
+    {
+      "status": "refined"
+    },
+    {
+      "status": "refined"
+    },
+    {
+      "status": "refined"
+    },
+    {
+      "status": "refined"
+    },
+    {
+      "status": "refined"
+    }
+  ],
+  "patient_feasibility": [
+    {
+      "trial_id": "TRIAL_SIM_01",
+      "match_score": 0.85
+    }
+  ],
+  "evaluation": {
+    "scientific_accuracy": {
+      "explanation": "Accurate",
+      "score": "1"
+    },
+    "clinical_relevance": {
+      "explanation": "Relevant",
+      "score": "3"
+    },
+    "groundedness": {
+      "explanation": "Grounded",
+      "score": "3"
+    }
+  },
+  "kg_nodes": 1,
+  "status": "research_accelerated",
+  "refinement": {
+    "status": "refined"
+  }
+}

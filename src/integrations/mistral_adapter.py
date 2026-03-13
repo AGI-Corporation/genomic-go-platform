@@ -114,15 +114,19 @@ class MistralGenomicAdapter:
 
     async def parse_structured_output(self, prompt: str, response_format: Any) -> Any:
         """Parse structured output from Mistral using a Pydantic model."""
-        response = await self.client.chat.parse_async(
+        # Note: Mistral SDK uses complete_async with response_format for structured outputs
+        response = await self.client.chat.complete_async(
             model="mistral-large-latest",
             messages=[{"role": "user", "content": prompt}],
-            response_format=response_format,
+            response_format={
+                "type": "json_object",
+            },
             temperature=0,
         )
-        return response.choices[0].message.parsed
+        content = response.choices[0].message.content
+        return response_format.model_validate_json(content)
 
-    async def run_agent_task(self, prompt: str, tools: List[Dict[str, Any]]) -> str:
+    async def run_agent_task(self, prompt: str, tools: List[Dict[str, Any]]) -> Any:
         """Execute an agentic task using Mistral tool calling."""
         response = await self.client.chat.complete_async(
             model="mistral-large-latest",
@@ -130,7 +134,7 @@ class MistralGenomicAdapter:
             tools=tools,
             tool_choice="auto",
         )
-        return response.choices[0].message.content
+        return response.choices[0].message
 
 
 class MistralOptimizedRouter:

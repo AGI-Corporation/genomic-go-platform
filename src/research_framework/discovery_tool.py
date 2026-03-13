@@ -123,7 +123,23 @@ class GenomicDiscoveryTool:
             "status": "research_accelerated",
         }
 
-        # 6. Lab Notebook: Persistence
+        # 6. Refinement Loop (Hackathon Special)
+        # If any evaluation score is < 2 (low/medium), trigger a refinement task
+        if any(int(crit.score) < 2 for crit in evaluation.__dict__.values() if hasattr(crit, 'score')):
+            print("Low evaluation score detected. Triggering research refinement...")
+            refinement_task = {
+                "id": "REFINEMENT",
+                "description": f"Refine research findings for {indication} focusing on improving {evaluation}"
+            }
+            # Add refinement result to report
+            from src.research_framework.swarm import SwarmTask
+            refinement_result = await self.swarm.orchestrator.delegate_task_with_context(
+                SwarmTask(**refinement_task), context
+            )
+            report["refinement"] = refinement_result
+            print("Refinement completed.")
+
+        # 7. Lab Notebook: Persistence
         self._save_to_notebook(report)
 
         return report

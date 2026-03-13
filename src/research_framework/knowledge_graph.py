@@ -4,8 +4,9 @@ Provides a structured representation of biological entities and their relationsh
 enhanced by Mistral embeddings for semantic link prediction.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import networkx as nx
+import numpy as np
 from src.integrations.mistral_adapter import MistralGenomicAdapter
 
 
@@ -43,6 +44,32 @@ class BiologicalKnowledgeGraph:
             for n in neighbors
             if self.graph.nodes[n].get("type") in ["gene", "protein"]
         ]
+
+    def predict_links(self, threshold: float = 0.85) -> List[Tuple[str, str, float]]:
+        """Predicts potential links between entities using semantic similarity."""
+        predictions = []
+        nodes = list(self.graph.nodes(data=True))
+
+        for i, (node_a, data_a) in enumerate(nodes):
+            embedding_a = data_a.get("embedding")
+            if embedding_a is None:
+                continue
+
+            for j in range(i + 1, len(nodes)):
+                node_b, data_b = nodes[j]
+                embedding_b = data_b.get("embedding")
+                if embedding_b is None:
+                    continue
+
+                # Calculate cosine similarity
+                sim = np.dot(embedding_a, embedding_b) / (
+                    np.linalg.norm(embedding_a) * np.linalg.norm(embedding_b)
+                )
+
+                if sim >= threshold:
+                    predictions.append((node_a, node_b, float(sim)))
+
+        return sorted(predictions, key=lambda x: x[2], reverse=True)
 
 
 class GraphEnrichedAgent:
