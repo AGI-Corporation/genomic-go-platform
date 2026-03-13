@@ -17,6 +17,7 @@ import asyncio
 import json
 import logging
 import uuid
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
@@ -311,7 +312,8 @@ class SafetyMonitoringSystem:
     def __init__(self, trial_id: str, safety_threshold: float = 0.15):
         self.trial_id = trial_id
         self.safety_threshold = safety_threshold
-        self.ae_buffer = []
+        self.ae_buffer = deque()  # Use deque for O(1) removals from the left
+        self.severe_ae_count = 0  # Track severe AEs in the current window
         self.alert_history = []
 
     async def monitor_adverse_event_stream(self, kafka_topic: str = "adverse-events"):
@@ -338,23 +340,38 @@ class SafetyMonitoringSystem:
 
     async def process_adverse_event(self, event: Dict):
         """Process single AE and check for safety signals"""
+        # Bolt Optimization: Use deque and sliding window for O(1) event processing
+        # instead of re-filtering the entire buffer (O(N)) on every event.
         self.ae_buffer.append(event)
+        if event.get("severity", 0) >= 3:
+            self.severe_ae_count += 1
 
-        # Calculate rolling AE rate
-        recent_aes = [
-            e
-            for e in self.ae_buffer
-            if datetime.fromisoformat(e["timestamp"])
-            > datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
-        ]
+        # Remove events older than 7 days (sliding window)
+        # Assumes events arrive in chronological order
+        now = datetime.now(timezone.utc)
+        seven_days_ago = now - timedelta(days=7)
 
-        if len(recent_aes) > 10:  # Minimum for statistical power
-            severe_ae_rate = sum(1 for e in recent_aes if e["severity"] >= 3) / len(
-                recent_aes
-            )
+        while self.ae_buffer:
+            oldest_event = self.ae_buffer[0]
+            oldest_time = datetime.fromisoformat(oldest_event["timestamp"])
+
+            # Fix: Handle both aware and naive datetimes by making everything aware
+            if oldest_time.tzinfo is None:
+                oldest_time = oldest_time.replace(tzinfo=timezone.utc)
+
+            if oldest_time < seven_days_ago:
+                popped = self.ae_buffer.popleft()
+                if popped.get("severity", 0) >= 3:
+                    self.severe_ae_count -= 1
+            else:
+                break
+
+        if len(self.ae_buffer) > 10:  # Minimum for statistical power
+            severe_ae_rate = self.severe_ae_count / len(self.ae_buffer)
 
             if severe_ae_rate > self.safety_threshold:
-                await self.trigger_safety_alert(severe_ae_rate, recent_aes)
+                # Convert deque to list for the alert to maintain compatibility
+                await self.trigger_safety_alert(severe_ae_rate, list(self.ae_buffer))
 
     async def trigger_safety_alert(self, rate: float, events: List[Dict]):
         """Trigger safety alert for trial"""
