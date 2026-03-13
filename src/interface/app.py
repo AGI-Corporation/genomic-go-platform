@@ -46,6 +46,20 @@ with st.expander("📂 Clinical & Genomic Data Integration"):
         fasta_file = st.selectbox("Select Target FASTA (Protein Sequence):",
                                  ["None", "data/sample/target_sequence.fasta"])
 
+    image_file = st.file_uploader("Upload Biological Image (Protein Structure/Gel):", type=["png", "jpg", "jpeg"])
+    if not image_file:
+        st.caption("Or use sample image:")
+        if st.checkbox("Use sample protein structure"):
+            image_path = "data/sample/protein_structure.png"
+        else:
+            image_path = None
+    else:
+        # Save uploaded file
+        os.makedirs("temp", exist_ok=True)
+        image_path = os.path.join("temp", image_file.name)
+        with open(image_path, "wb") as f:
+            f.write(image_file.getbuffer())
+
 if st.button("🚀 Accelerate Research"):
     if not indication:
         st.warning("Please enter an indication first.")
@@ -55,7 +69,12 @@ if st.button("🚀 Accelerate Research"):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                report = loop.run_until_complete(tool.accelerate_research(indication))
+                report = loop.run_until_complete(tool.accelerate_research(
+                    indication,
+                    vcf_path=vcf_file if vcf_file != "None" else None,
+                    fasta_path=fasta_file if fasta_file != "None" else None,
+                    image_path=image_path
+                ))
 
                 # Success Display
                 st.success(f"Research pipeline completed for {indication}!")
@@ -68,13 +87,18 @@ if st.button("🚀 Accelerate Research"):
                     st.write(f"**Knowledge Graph Nodes:** {report['kg_nodes']}")
 
                     # Display expanded swarm results in tabs
-                    tab1, tab2, tab3 = st.tabs(["Swarm Summary", "Bioinformatics", "Safety & Regulatory"])
+                    tab1, tab2, tab3, tab4 = st.tabs(["Swarm Summary", "Bioinformatics", "Safety & Regulatory", "Multimodal Analysis"])
                     with tab1:
                         st.json(report["swarm_intelligence_summary"][:3])
                     with tab2:
                         st.json(report["swarm_intelligence_summary"][3:4])
                     with tab3:
-                        st.json(report["swarm_intelligence_summary"][4:])
+                        st.json(report["swarm_intelligence_summary"][4:6])
+                    with tab4:
+                        st.json(report["swarm_intelligence_summary"][6:])
+                        if "patient_feasibility" in report:
+                            st.write("**Patient Feasibility Matching:**")
+                            st.json(report["patient_feasibility"])
 
                 with col2:
                     st.subheader("⚖️ Mistral Evaluation")

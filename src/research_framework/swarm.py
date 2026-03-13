@@ -45,6 +45,11 @@ class SwarmOrchestrator:
         self.agents[agent_id] = agent
 
     async def delegate_task(self, task: SwarmTask) -> Dict[str, Any]:
+        return await self.delegate_task_with_context(task, {})
+
+    async def delegate_task_with_context(
+        self, task: SwarmTask, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Uses Mistral tool-calling to decide and execute research tasks."""
         # Define tools for the orchestrator
         tools = [
@@ -73,8 +78,6 @@ class SwarmOrchestrator:
         decision = await self.mistral.run_agent_task(prompt, tools)
 
         # Step 2: Execute task through recommended agents
-        # In this hackathon framework, we simulate the tool's impact by enriching results
-        # with the chosen agent's specific context.
         execution_result = {
             "task_id": task.id,
             "status": "completed",
@@ -84,8 +87,9 @@ class SwarmOrchestrator:
 
         # Mock agent execution
         for agent_id, agent in self.agents.items():
-            if agent_id in decision:
-                agent_result = await agent.process_task(asdict(task), {})
+            # In hackathon mode, we often match based on ID substring if decision is empty
+            if agent_id in decision or task.id.lower() in agent_id.lower():
+                agent_result = await agent.process_task(asdict(task), context)
                 execution_result["agent_execution"] = agent_result
                 break
 
@@ -99,9 +103,10 @@ class GenomicSwarmFramework:
     def __init__(self):
         self.orchestrator = SwarmOrchestrator()
 
-    async def run_discovery_pipeline(self, indication: str):
+    async def run_discovery_pipeline(self, indication: str, context: Dict[str, Any] = None):
         """Executes an end-to-end genomic discovery pipeline."""
         print(f"Starting discovery pipeline for: {indication}")
+        context = context or {}
 
         # Define swarm tasks
         tasks = [
@@ -130,10 +135,18 @@ class GenomicSwarmFramework:
             ),
         ]
 
+        # Add vision task if image present
+        if context.get("image_path"):
+            tasks.append(
+                SwarmTask(
+                    "IMAGE_ANALYSIS", f"Analyze biological imagery for {indication}"
+                )
+            )
+
         results = []
         for task in tasks:
             print(f"Executing task: {task.id}...")
-            result = await self.orchestrator.delegate_task(task)
+            result = await self.orchestrator.delegate_task_with_context(task, context)
             results.append(result)
 
         return results

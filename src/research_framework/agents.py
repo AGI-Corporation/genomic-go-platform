@@ -39,7 +39,11 @@ class TargetDiscoveryAgent(BaseGenomicAgent):
     async def process_task(
         self, task: Dict[str, Any], context: Dict[str, Any]
     ) -> Dict[str, Any]:
+        fasta_data = context.get("fasta_data", "")
         prompt = f"Identify high-confidence drug targets for: {task.get('description')}. Use genetic evidence."
+        if fasta_data:
+            prompt += f"\n\nAnalyzed sequence data: {fasta_data[:1000]}"
+
         result = await self.mistral.analyze_genomic_data("", prompt)
         return {"role": self.role, "targets": result}
 
@@ -67,7 +71,11 @@ class BioinformaticsAgent(BaseGenomicAgent):
     async def process_task(
         self, task: Dict[str, Any], context: Dict[str, Any]
     ) -> Dict[str, Any]:
+        vcf_data = context.get("vcf_data", "")
         prompt = f"Analyze genomic variants for clinical significance: {task.get('description')}."
+        if vcf_data:
+            prompt += f"\n\nInput VCF variants: {vcf_data}"
+
         result = await self.mistral.analyze_genomic_data("", prompt)
         return {"role": self.role, "variant_analysis": result}
 
@@ -98,3 +106,21 @@ class RegulatoryAgent(BaseGenomicAgent):
         prompt = f"Prepare regulatory summary and trial design considerations for: {task.get('description')}."
         result = await self.mistral.analyze_genomic_data("", prompt)
         return {"role": self.role, "regulatory_summary": result}
+
+
+class VisionResearchAgent(BaseGenomicAgent):
+    """Agent specialized in biological image analysis using Pixtral."""
+
+    def __init__(self, api_key: str = None):
+        super().__init__("Multimodal Vision Researcher", api_key)
+
+    async def process_task(
+        self, task: Dict[str, Any], context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        image_path = context.get("image_path")
+        if not image_path:
+            return {"role": self.role, "error": "No image provided for vision analysis."}
+
+        prompt = f"Analyze this biological image for research insights related to {task.get('description')}."
+        result = await self.mistral.analyze_biological_image(image_path, prompt)
+        return {"role": self.role, "vision_analysis": result}
