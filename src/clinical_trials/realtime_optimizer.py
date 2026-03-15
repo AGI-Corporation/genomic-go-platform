@@ -13,10 +13,8 @@ Date: February 14, 2026
 Version: 1.0.0
 """
 
-import asyncio
 import json
 import logging
-import uuid
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -27,17 +25,6 @@ import pandas as pd
 import qdrant_client
 from aiokafka import AIOKafkaConsumer
 from kafka import KafkaProducer
-from scipy.stats import beta, norm
-import pandas as pd
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from scipy.stats import beta, norm
-import qdrant_client
-from kafka import KafkaProducer
-from aiokafka import AIOKafkaConsumer
-import json
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -227,7 +214,6 @@ class AdaptiveTrialDesign:
         except Exception as e:
             logger.error(f"Failed to send alert for {self.trial_id}: {e}")
             # Don't raise - alerting failure shouldn't stop trial
-
 
 
 class RealTimePatientMatcher:
