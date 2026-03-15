@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import sys
 import os
 
@@ -161,7 +161,62 @@ class TestSafetyMonitoringSystem:
         event = {
             "trial_id": "TEST-001",
             "severity": 3,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         await monitor.process_adverse_event(event)
         assert len(monitor.ae_buffer) == 1
+        assert monitor.severe_ae_count == 1
+
+    @pytest.mark.asyncio
+    async def test_sliding_window_pruning(self, monitor):
+        """Test that old events are pruned from the buffer."""
+        now = datetime.now(timezone.utc)
+        old_time = (now - timedelta(days=8)).isoformat()
+        new_time = now.isoformat()
+
+        # Add 5 old events
+        for _ in range(5):
+            await monitor.process_adverse_event({
+                "trial_id": "TEST-001",
+                "severity": 3,
+                "timestamp": old_time,
+            })
+
+        # At this point, they might not be pruned yet because the loop in process_adverse_event
+        # runs when a NEW event is added.
+        # Actually, adding them one by one will prune them if they are old relative to NOW.
+        # Let's check.
+
+        assert len(monitor.ae_buffer) == 0
+        assert monitor.severe_ae_count == 0
+
+        # Add 15 new events to trigger safety alert check (>10)
+        for i in range(15):
+            await monitor.process_adverse_event({
+                "trial_id": "TEST-001",
+                "severity": 4 if i < 5 else 1, # 5 severe events
+                "timestamp": new_time,
+            })
+
+        assert len(monitor.ae_buffer) == 15
+        assert monitor.severe_ae_count == 5
+
+        # severe_ae_rate = 5 / 15 = 0.333...
+        # threshold is 0.15, so it should trigger alert if we were mocking it.
+
+    @pytest.mark.asyncio
+    async def test_naive_timestamp_robustness(self, monitor):
+        """Test that the monitor handles naive timestamp strings correctly."""
+        now = datetime.now(timezone.utc)
+        # Create a naive timestamp string (no offset)
+        naive_time_str = (now - timedelta(days=8)).replace(tzinfo=None).isoformat()
+
+        # This should be pruned correctly without crashing
+        await monitor.process_adverse_event({
+            "trial_id": "TEST-001",
+            "severity": 3,
+            "timestamp": naive_time_str,
+        })
+
+        assert len(monitor.ae_buffer) == 0
+        assert monitor.severe_ae_count == 0
