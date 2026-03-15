@@ -26,10 +26,23 @@ tool = st.session_state.tool
 
 # Sidebar for Swarm Status
 st.sidebar.header("🐝 Swarm Status")
-agents = list(tool.swarm.orchestrator.agents.keys())
+agents = tool.swarm.orchestrator.agents
 st.sidebar.write(f"Active Agents: {len(agents)}")
-for agent in agents:
-    st.sidebar.markdown(f"- {agent}")
+
+for agent_id, agent in agents.items():
+    with st.sidebar.expander(f"🤖 {agent_id}", expanded=False):
+        st.write(f"**Role:** {getattr(agent, 'role', 'Unknown')}")
+
+        # Check for NANDA Bridge Agent specifics
+        if agent_id == "nanda_bridge":
+            st.info("🌐 Distributed NANDA Node")
+            if hasattr(agent, "agent_id") and agent.agent_id:
+                st.write(f"**NANDA ID:** `{agent.agent_id}`")
+                status = agent.nanda.get_agent_status(agent.agent_id)
+                st.write(f"**Health:** {status.get('health', 'unknown')}")
+                st.write(f"**State:** {status.get('current_state', 'unknown')}")
+            else:
+                st.caption("Waiting for first task to deploy...")
 
 st.sidebar.divider()
 st.sidebar.info("Built for Mistral Worldwide Hackathon 2025")
