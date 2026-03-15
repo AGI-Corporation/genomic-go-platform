@@ -17,6 +17,7 @@ import asyncio
 import json
 import logging
 import uuid
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
@@ -27,16 +28,6 @@ import qdrant_client
 from aiokafka import AIOKafkaConsumer
 from kafka import KafkaProducer
 from scipy.stats import beta, norm
-import pandas as pd
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from scipy.stats import beta, norm
-import qdrant_client
-from kafka import KafkaProducer
-from aiokafka import AIOKafkaConsumer
-import json
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -311,7 +302,10 @@ class SafetyMonitoringSystem:
     def __init__(self, trial_id: str, safety_threshold: float = 0.15):
         self.trial_id = trial_id
         self.safety_threshold = safety_threshold
-        self.ae_buffer = []
+        # Bolt Optimization: Use deque for O(1) removals from the left
+        # and maintain a running count of severe AEs to avoid O(N) scans.
+        self.ae_buffer = deque()
+        self.severe_ae_count = 0
         self.alert_history = []
 
     async def monitor_adverse_event_stream(self, kafka_topic: str = "adverse-events"):
@@ -338,23 +332,33 @@ class SafetyMonitoringSystem:
 
     async def process_adverse_event(self, event: Dict):
         """Process single AE and check for safety signals"""
+        # Bolt Optimization: Sliding window approach with O(1) complexity
         self.ae_buffer.append(event)
+        if event.get("severity", 0) >= 3:
+            self.severe_ae_count += 1
 
-        # Calculate rolling AE rate
-        recent_aes = [
-            e
-            for e in self.ae_buffer
-            if datetime.fromisoformat(e["timestamp"])
-            > datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
-        ]
+        # Prune events older than 7 days
+        # Bolt Optimization: Maintain O(1) amortized by only pruning from the left
+        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
 
-        if len(recent_aes) > 10:  # Minimum for statistical power
-            severe_ae_rate = sum(1 for e in recent_aes if e["severity"] >= 3) / len(
-                recent_aes
-            )
+        def _get_timestamp(e):
+            dt = datetime.fromisoformat(e["timestamp"])
+            if dt.tzinfo is None:
+                # Force UTC if timezone is missing, adhering to AGENTS.md guidelines
+                return dt.replace(tzinfo=timezone.utc)
+            return dt
+
+        while self.ae_buffer and _get_timestamp(self.ae_buffer[0]) <= cutoff:
+            removed_event = self.ae_buffer.popleft()
+            if removed_event.get("severity", 0) >= 3:
+                self.severe_ae_count -= 1
+
+        if len(self.ae_buffer) > 10:  # Minimum for statistical power
+            severe_ae_rate = self.severe_ae_count / len(self.ae_buffer)
 
             if severe_ae_rate > self.safety_threshold:
-                await self.trigger_safety_alert(severe_ae_rate, recent_aes)
+                # Convert deque to list for the alert trigger to maintain compatibility
+                await self.trigger_safety_alert(severe_ae_rate, list(self.ae_buffer))
 
     async def trigger_safety_alert(self, rate: float, events: List[Dict]):
         """Trigger safety alert for trial"""
