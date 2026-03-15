@@ -4,8 +4,10 @@ This module defines concrete implementations of research agents
 that handle specific steps in the genomic discovery pipeline.
 """
 
-from typing import Dict, Any
+import os
+from typing import Dict, Any, Optional
 from src.integrations.mistral_adapter import MistralGenomicAdapter
+from src.compound_library.compound_searcher import CompoundSearcher
 
 
 class BaseGenomicAgent:
@@ -14,6 +16,11 @@ class BaseGenomicAgent:
     def __init__(self, role: str, api_key: str = None):
         self.role = role
         self.mistral = MistralGenomicAdapter(api_key)
+        self.tools: Dict[str, Any] = {}
+
+    def register_tool(self, name: str, tool_func: Any):
+        """Registers a new tool for the agent to use."""
+        self.tools[name] = tool_func
 
 
 class LiteratureAgent(BaseGenomicAgent):
@@ -35,6 +42,9 @@ class TargetDiscoveryAgent(BaseGenomicAgent):
 
     def __init__(self, api_key: str = None):
         super().__init__("Target Identification Specialist", api_key)
+        from src.utils.bio_parsers import parse_fasta
+
+        self.register_tool("fasta_parser", parse_fasta)
 
     async def process_task(
         self, task: Dict[str, Any], context: Dict[str, Any]
@@ -51,15 +61,37 @@ class TargetDiscoveryAgent(BaseGenomicAgent):
 class LeadOptimizationAgent(BaseGenomicAgent):
     """Agent specialized in compound screening and lead optimization."""
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, qdrant_url: Optional[str] = None):
         super().__init__("Lead Chemist", api_key)
+        self.qdrant_url = qdrant_url or os.getenv("QDRANT_URL")
+        self.searcher = None
+        if self.qdrant_url:
+            try:
+                self.searcher = CompoundSearcher(
+                    collection_name="compound_library", qdrant_url=self.qdrant_url
+                )
+            except Exception:
+                self.searcher = None
 
     async def process_task(
         self, task: Dict[str, Any], context: Dict[str, Any]
     ) -> Dict[str, Any]:
-        prompt = f"Propose lead compounds or chemical scaffolds for: {task.get('description')}."
-        result = await self.mistral.analyze_genomic_data("", prompt)
-        return {"role": self.role, "lead_compounds": result}
+        description = task.get("description", "")
+        prompt = f"Propose lead compounds or chemical scaffolds for: {description}."
+        llm_result = await self.mistral.analyze_genomic_data("", prompt)
+
+        semantic_results = []
+        if self.searcher:
+            try:
+                semantic_results = self.searcher.search(description, limit=3)
+            except Exception:
+                semantic_results = []
+
+        return {
+            "role": self.role,
+            "proposed_leads": llm_result,
+            "library_matches": semantic_results,
+        }
 
 
 class BioinformaticsAgent(BaseGenomicAgent):
@@ -67,6 +99,9 @@ class BioinformaticsAgent(BaseGenomicAgent):
 
     def __init__(self, api_key: str = None):
         super().__init__("Bioinformatics Scientist", api_key)
+        from src.utils.bio_parsers import parse_vcf
+
+        self.register_tool("vcf_parser", parse_vcf)
 
     async def process_task(
         self, task: Dict[str, Any], context: Dict[str, Any]

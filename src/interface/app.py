@@ -18,9 +18,14 @@ if "MISTRAL_API_KEY" not in os.environ:
     )
     st.stop()
 
+# Initialize tool in session state
+if "tool" not in st.session_state:
+    st.session_state.tool = GenomicDiscoveryTool()
+
+tool = st.session_state.tool
+
 # Sidebar for Swarm Status
 st.sidebar.header("🐝 Swarm Status")
-tool = GenomicDiscoveryTool()
 agents = list(tool.swarm.orchestrator.agents.keys())
 st.sidebar.write(f"Active Agents: {len(agents)}")
 for agent in agents:
@@ -133,7 +138,70 @@ st.subheader("🕸️ Biological Knowledge Graph")
 st.write(
     f"The graph currently contains {len(tool.kg.graph.nodes)} high-fidelity entities linked by Mistral semantic embeddings."
 )
-if st.checkbox("Show Graph Nodes"):
+
+if st.checkbox("Show Interactive Graph Visualization"):
+    import plotly.graph_objects as go
+    import networkx as nx
+
+    G = tool.kg.graph
+    if len(G.nodes) > 0:
+        pos = nx.spring_layout(G)
+        edge_x = []
+        edge_y = []
+        for edge in G.edges():
+            x0, y0 = pos[edge[0]]
+            x1, y1 = pos[edge[1]]
+            edge_x.extend([x0, x1, None])
+            edge_y.extend([y0, y1, None])
+
+        edge_trace = go.Scatter(
+            x=edge_x, y=edge_y,
+            line=dict(width=0.5, color='#888'),
+            hoverinfo='none',
+            mode='lines')
+
+        node_x = []
+        node_y = []
+        for node in G.nodes():
+            x, y = pos[node]
+            node_x.append(x)
+            node_y.append(y)
+
+        node_colors = []
+        node_text = []
+        color_map = {"disease": "#FF4B4B", "gene": "#1C83E1", "protein": "#00C0F2", "compound": "#29B09D"}
+
+        for node, data in G.nodes(data=True):
+            node_type = data.get("type", "unknown")
+            node_colors.append(color_map.get(node_type, "#888"))
+
+            metadata = data.get("metadata", {})
+            desc = metadata.get("description", "No description available.")
+            node_text.append(f"<b>ID:</b> {node}<br><b>Type:</b> {node_type}<br><b>Desc:</b> {desc}")
+
+        node_trace = go.Scatter(
+            x=node_x, y=node_y,
+            mode='markers',
+            hoverinfo='text',
+            text=node_text,
+            marker=dict(
+                color=node_colors,
+                size=15,
+                line_width=2))
+
+        fig = go.Figure(data=[edge_trace, node_trace],
+                     layout=go.Layout(
+                        showlegend=False,
+                        hovermode='closest',
+                        margin=dict(b=0,l=0,r=0,t=0),
+                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False))
+                    )
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("The graph is currently empty. Run research discovery to populate nodes.")
+
+if st.checkbox("Show Graph Raw Data"):
     st.write(list(tool.kg.graph.nodes(data=True)))
 
 # Augmented Reality Integration

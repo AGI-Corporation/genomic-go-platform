@@ -50,3 +50,14 @@ class SwarmTaskSchema(BaseModel):
     priority: int
     assigned_agent: Optional[str] = None
     status: str = "pending"
+
+
+class EntityExtraction(BaseModel):
+    """Schema for biological entity extraction."""
+
+    class Entity(BaseModel):
+        id: str
+        type: str = Field(..., description="Type of entity: gene, protein, compound, disease")
+        description: str
+
+    entities: List[Entity]

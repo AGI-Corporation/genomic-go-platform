@@ -22,6 +22,7 @@ from src.compound_library.compound_generator import CompoundGenerationAgent
 from src.research_framework.knowledge_graph import BiologicalKnowledgeGraph
 from src.research_framework.evaluation import ResearchJudge
 from src.integrations.mistral_adapter import MistralGenomicAdapter
+from src.schemas.genomic_entities import EntityExtraction
 
 
 class GenomicDiscoveryTool:
@@ -83,6 +84,18 @@ class GenomicDiscoveryTool:
         await self.kg.add_entity(
             indication, "disease", {"description": f"Target disease: {indication}"}
         )
+
+        # Extract entities from swarm results
+        extraction_prompt = f"Extract biological entities (genes, proteins, compounds) from these research findings for {indication}: {str(swarm_results)}"
+        try:
+            extracted = await self.mistral.parse_structured_output(extraction_prompt, EntityExtraction)
+            for entity in extracted.entities:
+                await self.kg.add_entity(
+                    entity.id, entity.type, {"description": entity.description}
+                )
+                self.kg.add_interaction(indication, entity.id, "associated_with")
+        except Exception as e:
+            print(f"Entity extraction failed: {e}")
 
         # 3. Patient Feasibility Matching
         print("Evaluating patient feasibility using RealTimePatientMatcher...")
