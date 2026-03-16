@@ -1,0 +1,3 @@
+## 2026-02-14 - [Optimization of Real-time Safety Monitoring]
+**Learning:** Using a standard Python list to buffer high-frequency events for rolling calculations leads to $O(N)$ processing time and unbounded memory growth. $N$ grows over the life of the application, eventually causing latency spikes and OOM errors.
+**Action:** Use `collections.deque` for event buffers that require pruning. Maintain running tallies (e.g., severe event counts) during ingestion/pruning to keep analysis operations at $O(1)$ amortized complexity. Always ensure timestamps are timezone-aware before comparison to avoid `TypeError`.
