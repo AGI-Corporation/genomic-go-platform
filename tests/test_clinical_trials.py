@@ -158,10 +158,11 @@ class TestSafetyMonitoringSystem:
     @pytest.mark.asyncio
     async def test_process_adverse_event(self, monitor):
         """Test adverse event processing."""
+        from datetime import timezone
         event = {
             "trial_id": "TEST-001",
             "severity": 3,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         await monitor.process_adverse_event(event)
         assert len(monitor.ae_buffer) == 1
