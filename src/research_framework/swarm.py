@@ -147,6 +147,14 @@ class GenomicSwarmFramework:
                 "REGULATORY_PREP",
                 f"Prepare initial regulatory brief for {indication} clinical trial",
             ),
+            SwarmTask(
+                "STRUCTURE_PREDICTION",
+                f"Predict 3D protein structure for {indication} target using AlphaFold3",
+            ),
+            SwarmTask(
+                "AUTOMATION_PLAN",
+                f"Design automated lab validation protocol for {indication} leads",
+            ),
         ]
 
         # Add vision task if image present

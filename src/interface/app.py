@@ -65,6 +65,8 @@ with st.expander("📂 Clinical & Genomic Data Integration"):
                                  ["None", "data/sample/target_sequence.fasta"])
 
     image_file = st.file_uploader("Upload Biological Image (Protein Structure/Gel):", type=["png", "jpg", "jpeg"])
+    protocol_file = st.file_uploader("Upload Clinical Protocol (PDF):", type=["pdf"])
+
     if not image_file:
         st.caption("Or use sample image:")
         if st.checkbox("Use sample protein structure"):
@@ -91,7 +93,8 @@ if st.button("🚀 Accelerate Research"):
                     indication,
                     vcf_path=vcf_file if vcf_file != "None" else None,
                     fasta_path=fasta_file if fasta_file != "None" else None,
-                    image_path=image_path
+                    image_path=image_path,
+                    protocol_pdf_path=protocol_file.name if protocol_file else None
                 ))
 
                 # Success Display
@@ -234,3 +237,39 @@ with col_ar1:
 
 with col_ar2:
     st.image("https://placehold.co/600x400?text=AR+Holographic+Preview+Waiting", caption="Spatial Preview")
+
+# Artifact Gallery Section
+st.divider()
+st.subheader("🖼️ Swarm Artifact Gallery")
+st.info("Explore complex biological artifacts produced by the research swarm.")
+
+# Fetch real artifacts from registry
+real_artifacts = tool.artifacts.list_artifacts()
+
+if not real_artifacts:
+    st.caption("No biological artifacts generated yet. Run research discovery to populate the gallery.")
+    # Show mock examples for UI demonstration if empty
+    real_artifacts = [
+        {"artifact_id": "ART_MOCK_01", "type": "pdb_structure", "agent_id": "protein_agent", "metadata": {"desc": "Predicted target structure"}},
+        {"artifact_id": "ART_MOCK_02", "type": "genomic_profile", "agent_id": "bio_agent", "metadata": {"desc": "Variant impact profile"}},
+    ]
+
+cols = st.columns(3)
+for i, art in enumerate(real_artifacts):
+    with cols[i % 3]:
+        # Handle both Pydantic objects and dicts (for mock)
+        art_id = getattr(art, "artifact_id", art.get("artifact_id"))
+        art_type = getattr(art, "type", art.get("type"))
+        agent_id = getattr(art, "agent_id", art.get("agent_id"))
+        metadata = getattr(art, "metadata", art.get("metadata", {}))
+
+        st.write(f"**Artifact ID:** `{art_id}`")
+        st.write(f"**Type:** {art_type}")
+        st.write(f"**Agent:** {agent_id}")
+        st.caption(metadata.get("desc", "Biological research artifact."))
+
+        if st.button(f"View {art_type}", key=art_id):
+            if hasattr(art, "data"):
+                st.json(art.data)
+            else:
+                st.info("Artifact data visualization pending.")

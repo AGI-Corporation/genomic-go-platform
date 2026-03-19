@@ -17,9 +17,14 @@ from src.research_framework.agents import (
     SafetyAgent,
     RegulatoryAgent,
     VisionResearchAgent,
+    NANDABridgeAgent,
+    ProteinStructureAgent,
+    LabAutomationAgent,
 )
 from src.compound_library.compound_generator import CompoundGenerationAgent
+from src.integrations.nanda_agent_integration import NANDAAgentConfig
 from src.research_framework.knowledge_graph import BiologicalKnowledgeGraph
+from src.research_framework.artifacts import ArtifactRegistry
 from src.research_framework.evaluation import ResearchJudge
 from src.integrations.mistral_adapter import MistralGenomicAdapter
 from src.schemas.genomic_entities import EntityExtraction
@@ -31,6 +36,7 @@ class GenomicDiscoveryTool:
     def __init__(self, api_key: Optional[str] = None):
         self.swarm = GenomicSwarmFramework()
         self.kg = BiologicalKnowledgeGraph(api_key)
+        self.artifacts = ArtifactRegistry()
         self.mistral = MistralGenomicAdapter(api_key)
         self.judge = ResearchJudge(api_key)
 
@@ -57,6 +63,23 @@ class GenomicDiscoveryTool:
         self.swarm.orchestrator.register_agent(
             "vision_agent", VisionResearchAgent(api_key)
         )
+        self.swarm.orchestrator.register_agent(
+            "protein_agent", ProteinStructureAgent(api_key)
+        )
+        self.swarm.orchestrator.register_agent(
+            "automation_agent", LabAutomationAgent(api_key)
+        )
+
+        # Register NANDA Bridge Agent for distributed execution if config exists
+        nanda_key = os.getenv("ANTHROPIC_API_KEY")
+        if nanda_key:
+            nanda_config = NANDAAgentConfig(
+                anthropic_key=nanda_key,
+                domain=os.getenv("NANDA_DOMAIN", "genomic.agicorp.network"),
+            )
+            self.swarm.orchestrator.register_agent(
+                "nanda_bridge", NANDABridgeAgent(nanda_config)
+            )
 
     async def accelerate_research(self, indication: str, vcf_path: str = None, fasta_path: str = None, image_path: str = None):
         """Runs the complete R&D acceleration pipeline with experiment tracking."""
@@ -133,6 +156,7 @@ class GenomicDiscoveryTool:
             "patient_feasibility": matches,
             "evaluation": evaluation.model_dump(),
             "kg_nodes": len(self.kg.graph.nodes),
+            "artifacts": [a.artifact_id for a in self.artifacts.list_artifacts()],
             "status": "research_accelerated",
         }
 

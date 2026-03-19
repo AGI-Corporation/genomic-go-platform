@@ -1,0 +1,10 @@
+{
+  "artifact_id": "ART_1773878847",
+  "agent_id": "bio_agent",
+  "type": "genomic_profile",
+  "data": "rs123\tC\tT",
+  "metadata": {
+    "indication": "Check BRCA1 mutations"
+  },
+  "created_at": "2026-03-19T00:07:27.944429Z"
+}

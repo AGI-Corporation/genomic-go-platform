@@ -18,6 +18,12 @@
     },
     {
       "status": "refined"
+    },
+    {
+      "status": "refined"
+    },
+    {
+      "status": "refined"
     }
   ],
   "patient_feasibility": [
@@ -41,6 +47,7 @@
     }
   },
   "kg_nodes": 1,
+  "artifacts": [],
   "status": "research_accelerated",
   "refinement": {
     "status": "refined"

@@ -61,3 +61,28 @@ class EntityExtraction(BaseModel):
         description: str
 
     entities: List[Entity]
+
+
+class InteroperableTask(BaseModel):
+    """Schema for standardized task communication between frameworks."""
+
+    task_id: str
+    source_framework: str = Field(..., description="e.g., Mistral, NANDA")
+    target_framework: str
+    task_type: str
+    payload: Dict[str, Any]
+    priority: int = 1
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class AgentArtifact(BaseModel):
+    """Schema for biological artifacts produced by agents."""
+
+    artifact_id: str
+    agent_id: str
+    type: str = Field(
+        ..., description="e.g., pdb_structure, genomic_profile, lead_compound"
+    )
+    data: Any
+    metadata: Dict[str, Any] = {}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
