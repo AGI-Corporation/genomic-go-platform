@@ -1,0 +1,3 @@
+## 2026-02-14 - [Optimizing Real-time Event Streams]
+**Learning:** Unbounded list growth and O(N) scanning for rolling window calculations create significant performance bottlenecks as trial history grows. Replacing list-based filtering with a `collections.deque` and a running counter reduces complexity from O(N) to amortized O(1). Additionally, mixed naive/aware datetime objects in ISO strings can crash comparison logic; always normalize to UTC-aware objects.
+**Action:** Prefer `collections.deque` with manual pruning and running aggregations for any real-time stream processing or sliding window logic. Always use `datetime.now(timezone.utc)` and ensure parsed timestamps are aware before comparison.
