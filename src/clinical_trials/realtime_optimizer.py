@@ -17,6 +17,7 @@ import asyncio
 import json
 import logging
 import uuid
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
@@ -24,19 +25,10 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import qdrant_client
+import xgboost as xgb
 from aiokafka import AIOKafkaConsumer
 from kafka import KafkaProducer
 from scipy.stats import beta, norm
-import pandas as pd
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from scipy.stats import beta, norm
-import qdrant_client
-from kafka import KafkaProducer
-from aiokafka import AIOKafkaConsumer
-import json
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -311,7 +303,8 @@ class SafetyMonitoringSystem:
     def __init__(self, trial_id: str, safety_threshold: float = 0.15):
         self.trial_id = trial_id
         self.safety_threshold = safety_threshold
-        self.ae_buffer = []
+        self.ae_buffer = deque()
+        self.severe_count = 0  # Running count of AEs with severity >= 3
         self.alert_history = []
 
     async def monitor_adverse_event_stream(self, kafka_topic: str = "adverse-events"):
@@ -337,24 +330,41 @@ class SafetyMonitoringSystem:
             await consumer.stop()
 
     async def process_adverse_event(self, event: Dict):
-        """Process single AE and check for safety signals"""
+        """
+        Process single AE and check for safety signals.
+        Optimized with O(1) sliding window and running aggregation.
+        """
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(days=7)
+
+        # Add new event
         self.ae_buffer.append(event)
+        if event["severity"] >= 3:
+            self.severe_count += 1
 
-        # Calculate rolling AE rate
-        recent_aes = [
-            e
-            for e in self.ae_buffer
-            if datetime.fromisoformat(e["timestamp"])
-            > datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
-        ]
+        # Prune expired events (older than 7 days) from the left
+        while self.ae_buffer:
+            first_event = self.ae_buffer[0]
+            first_time = datetime.fromisoformat(first_event["timestamp"])
 
-        if len(recent_aes) > 10:  # Minimum for statistical power
-            severe_ae_rate = sum(1 for e in recent_aes if e["severity"] >= 3) / len(
-                recent_aes
-            )
+            # Ensure timezone awareness for comparison
+            if first_time.tzinfo is None:
+                first_time = first_time.replace(tzinfo=timezone.utc)
+
+            if first_time < cutoff:
+                expired = self.ae_buffer.popleft()
+                if expired["severity"] >= 3:
+                    self.severe_count -= 1
+            else:
+                break
+
+        # Calculate rolling AE rate using pre-aggregated count
+        if len(self.ae_buffer) > 10:  # Minimum for statistical power
+            severe_ae_rate = self.severe_count / len(self.ae_buffer)
 
             if severe_ae_rate > self.safety_threshold:
-                await self.trigger_safety_alert(severe_ae_rate, recent_aes)
+                # Pass a list of recent events for the alert
+                await self.trigger_safety_alert(severe_ae_rate, list(self.ae_buffer))
 
     async def trigger_safety_alert(self, rate: float, events: List[Dict]):
         """Trigger safety alert for trial"""
@@ -369,8 +379,6 @@ class EndpointPredictor:
 
     def __init__(self, model_path: str):
         # Load pre-trained XGBoost model
-        import xgboost as xgb
-
         self.model = xgb.Booster()
         self.model.load_model(model_path)
 
@@ -393,9 +401,7 @@ class EndpointPredictor:
         # Feature engineering
         features = self.engineer_features(interim_data, information_fraction)
 
-        # Model prediction
-        import xgboost as xgb
-
+        # Model prediction using module-level xgb
         dmatrix = xgb.DMatrix(features)
         pred = self.model.predict(dmatrix)[0]
 
