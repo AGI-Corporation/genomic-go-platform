@@ -13,30 +13,18 @@ Date: February 14, 2026
 Version: 1.0.0
 """
 
-import asyncio
 import json
 import logging
-import uuid
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 import qdrant_client
 from aiokafka import AIOKafkaConsumer
 from kafka import KafkaProducer
-from scipy.stats import beta, norm
-import pandas as pd
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from scipy.stats import beta, norm
-import qdrant_client
-from kafka import KafkaProducer
-from aiokafka import AIOKafkaConsumer
-import json
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -216,7 +204,9 @@ class AdaptiveTrialDesign:
                 "message": message,
                 "trial_id": self.trial_id,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "severity": "CRITICAL" if "stop" in alert_type.lower() else "WARNING",
+                "severity": (
+                    "CRITICAL" if "stop" in alert_type.lower() else "WARNING"
+                ),
             }
 
             self.producer.send("trial-alerts", alert_payload)
@@ -226,7 +216,6 @@ class AdaptiveTrialDesign:
         except Exception as e:
             logger.error(f"Failed to send alert for {self.trial_id}: {e}")
             # Don't raise - alerting failure shouldn't stop trial
-
 
 
 class RealTimePatientMatcher:
@@ -311,7 +300,10 @@ class SafetyMonitoringSystem:
     def __init__(self, trial_id: str, safety_threshold: float = 0.15):
         self.trial_id = trial_id
         self.safety_threshold = safety_threshold
-        self.ae_buffer = []
+        # Use deque for O(1) removals from the left
+        self.ae_buffer = deque()
+        # Running count of severe events to maintain O(1) complexity
+        self.severe_count = 0
         self.alert_history = []
 
     async def monitor_adverse_event_stream(self, kafka_topic: str = "adverse-events"):
@@ -337,28 +329,53 @@ class SafetyMonitoringSystem:
             await consumer.stop()
 
     async def process_adverse_event(self, event: Dict):
-        """Process single AE and check for safety signals"""
+        """
+        Process single AE with O(1) amortized complexity.
+        Uses a sliding window for a 7-day rolling window of events.
+        """
+        # Maintain timezone-aware comparison baseline
+        now = datetime.now(timezone.utc)
+        seven_days_ago = now - timedelta(days=7)
+
+        # Ensure event timestamp is timezone-aware for comparison
+        event_ts = datetime.fromisoformat(event["timestamp"])
+        if event_ts.tzinfo is None:
+            event_ts = event_ts.replace(tzinfo=timezone.utc)
+
+        # Append new event and update running severe count
         self.ae_buffer.append(event)
+        if event.get("severity", 0) >= 3:
+            self.severe_count += 1
 
-        # Calculate rolling AE rate
-        recent_aes = [
-            e
-            for e in self.ae_buffer
-            if datetime.fromisoformat(e["timestamp"])
-            > datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
-        ]
+        # Prune old events from the left (older than 7 days)
+        # Assuming events arrive mostly in chronological order
+        while self.ae_buffer:
+            oldest_event = self.ae_buffer[0]
+            oldest_ts = datetime.fromisoformat(oldest_event["timestamp"])
+            if oldest_ts.tzinfo is None:
+                oldest_ts = oldest_ts.replace(tzinfo=timezone.utc)
 
-        if len(recent_aes) > 10:  # Minimum for statistical power
-            severe_ae_rate = sum(1 for e in recent_aes if e["severity"] >= 3) / len(
-                recent_aes
-            )
+            if oldest_ts < seven_days_ago:
+                popped_event = self.ae_buffer.popleft()
+                if popped_event.get("severity", 0) >= 3:
+                    self.severe_count -= 1
+            else:
+                # Stop pruning once we reach an event within the 7-day window
+                break
+
+        # Calculate rolling AE rate with O(1) checks
+        buffer_size = len(self.ae_buffer)
+        if buffer_size > 10:  # Minimum for statistical power
+            severe_ae_rate = self.severe_count / buffer_size
 
             if severe_ae_rate > self.safety_threshold:
-                await self.trigger_safety_alert(severe_ae_rate, recent_aes)
+                await self.trigger_safety_alert(severe_ae_rate, list(self.ae_buffer))
 
     async def trigger_safety_alert(self, rate: float, events: List[Dict]):
         """Trigger safety alert for trial"""
-        logger.error(f"SAFETY ALERT for {self.trial_id}: Severe AE rate at {rate:.2%}")
+        logger.error(
+            f"SAFETY ALERT for {self.trial_id}: Severe AE rate at {rate:.2%}"
+        )
 
 
 class EndpointPredictor:
