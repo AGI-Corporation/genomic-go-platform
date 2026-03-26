@@ -1,0 +1,3 @@
+## 2026-02-14 - [Optimizing Real-time Event Streams with Sliding Windows]
+**Learning:** Unbounded list growth and O(N) filtering in high-frequency event loops (like safety monitoring) creates a significant performance bottleneck and memory leak. Using `collections.deque` for O(1) removals and maintaining running aggregations (like `severe_count`) reduces complexity to O(1) amortized.
+**Action:** Always prefer `collections.deque` with sliding window pruning and running counters for processing time-series event streams. Ensure timestamps are parsed once and stored alongside events to avoid redundant O(N) parsing overhead.
