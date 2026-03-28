@@ -382,4 +382,146 @@ All HTTP endpoints use standard error format:
 
 ---
 
-_Next: [Algorithms](Algorithms.md) | [Configuration](Configuration.md)_
+## RP1 Spatial Internet — NSO Server Endpoints
+
+The Genomic.go Platform self-hosts an **NSO (Network Service Object) server** at `RP1_NSO_HOST` that RP1 calls when users interact with objects in the virtual lab. These endpoints are distinct from the main API gateway — they are inbound calls from RP1, not outbound calls from clients.
+
+All NSO endpoints must validate the `X-RP1-Signature` header to ensure requests originate from RP1.
+
+### `POST /nso/compound_viewer`
+
+Called when a user interacts with a 3D compound card.
+
+**Request from RP1:**
+```json
+{
+  "event": "user_interaction",
+  "user_id": "rp1-user-abc",
+  "compound_id": "CHEMBL475825",
+  "interaction_type": "inspect"
+}
+```
+
+`interaction_type` values: `inspect`, `share`, `pin`, `download_smiles`
+
+**Response:**
+```json
+{
+  "compound_detail": {
+    "compound_id": "CHEMBL475825",
+    "name": "Erlotinib",
+    "admet": { "bioavailability": 0.82, "toxicity": "low" }
+  },
+  "similar_compounds_url": "/v1/agents/compound-search/similar/CHEMBL475825"
+}
+```
+
+---
+
+### `POST /nso/trial_dashboard`
+
+Called when a user selects a trial arm or requests drill-down data.
+
+**Request from RP1:**
+```json
+{
+  "event": "arm_selected",
+  "user_id": "rp1-user-abc",
+  "trial_id": "TRIAL-2026-EGFR",
+  "arm": "treatment_A"
+}
+```
+
+**Response:**
+```json
+{
+  "arm": "treatment_A",
+  "successes": 48,
+  "failures": 22,
+  "posterior_mean": 0.686,
+  "enrolled": 70
+}
+```
+
+---
+
+### `POST /nso/protein_viewer`
+
+Called when a user annotates a residue or requests structure download.
+
+**Request from RP1:**
+```json
+{
+  "event": "structure_interaction",
+  "task_id": "af3-task-abc123",
+  "interaction_type": "annotate",
+  "residue_index": 42,
+  "annotation": "Active site residue"
+}
+```
+
+**Response:**
+```json
+{
+  "annotation_saved": true,
+  "annotation_id": "ann-xyz"
+}
+```
+
+---
+
+### `GET /nso/agent_feed`
+
+Polled by the RP1 RIA on join to populate initial event history.
+
+**Response:**
+```json
+{
+  "events": [
+    {
+      "agent_id": "compound-agent-03",
+      "agent_type": "compound_discovery",
+      "event_type": "task_completed",
+      "description": "Screened 10,000 compounds against EGFR binding pocket",
+      "timestamp": "2026-03-28T08:02:00Z",
+      "metadata": { "top_hits": 23, "admet_passed": 8 }
+    }
+  ],
+  "total": 1
+}
+```
+
+Returns last 50 events, most recent first.
+
+---
+
+### `POST /nso/collaboration`
+
+Called for presence events and shared object manipulation.
+
+**Request from RP1 (object moved):**
+```json
+{
+  "event": "object_moved",
+  "user_id": "rp1-user-abc",
+  "object_type": "compound_card",
+  "object_id": "CHEMBL475825",
+  "new_position": { "x": 2.0, "y": 0.0, "z": 1.5, "rotation_y": 45 }
+}
+```
+
+**Request from RP1 (user joined):**
+```json
+{
+  "event": "user_joined",
+  "user_id": "rp1-user-abc",
+  "display_name": "Dr. Chen",
+  "position": { "x": 0.0, "y": 0.0, "z": 0.0, "rotation_y": 0 }
+}
+```
+
+**Response:** `204 No Content`
+
+---
+
+_Next: [Algorithms](Algorithms.md) | [Configuration](Configuration.md) | [RP1 Metaverse Integration](RP1-Metaverse-Integration.md)_

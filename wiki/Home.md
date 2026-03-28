@@ -32,6 +32,8 @@ Genomic.go is a cloud-native, AI-powered research infrastructure that combines *
 | [Security](Security.md) | Zero-trust architecture, HIPAA compliance, authentication |
 | [Development Guide](Development-Guide.md) | Testing, linting, contributing, code standards |
 | [Deployment](Deployment.md) | Docker, Kubernetes, GKE production deployment |
+| [Integrations Deep Dive](Integrations-Deep-Dive.md) | Granular technical comparison of all integrations: NANDA, AlphaFold3, Robotics, RP1 |
+| [RP1 Metaverse Integration](RP1-Metaverse-Integration.md) | Full guide to the RP1 Spatial Internet integration — virtual lab, NSOs, data flows |
 
 ---
 

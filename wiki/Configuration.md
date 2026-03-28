@@ -71,6 +71,16 @@ These variables must be set for the platform to function.
 | `ALPHAFOLD3_ENDPOINT` | AlphaFold3 API endpoint URL |
 | `ALPHAFOLD3_API_KEY` | Authentication key for AlphaFold3 service |
 
+### RP1 Spatial Internet
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RP1_API_KEY` | RP1 developer API key (from dev.rp1.com) | — |
+| `RP1_FABRIC_ID` | Spatial fabric ID created via RP1 CLI | — |
+| `RP1_API_BASE_URL` | RP1 REST API base URL | `https://api.rp1.com/v1` |
+| `RP1_SOCKET_URL` | RP1 Socket.IO endpoint | `https://socket.rp1.com` |
+| `RP1_NSO_HOST` | Public URL of your self-hosted NSO server | `https://nso.genomic.agicorp.network` |
+
 ### Blockchain / DeSci
 
 | Variable | Description | Example |
@@ -99,6 +109,21 @@ config = NANDAAgentConfig(
     registry_url="chat.nanda-registry.com",  # default
     port_start=8000,                     # default, incremented per agent
     smithery_key=None                    # optional
+)
+```
+
+### `RP1Config`
+
+```python
+from src.integrations.rp1_metaverse_integration import RP1Config
+
+config = RP1Config(
+    api_key="rp1-key",                           # or set RP1_API_KEY
+    fabric_id="fab-xyz",                          # or set RP1_FABRIC_ID
+    base_url="https://api.rp1.com/v1",           # default
+    socket_url="https://socket.rp1.com",         # default
+    nso_host="https://nso.genomic.agicorp.network",  # default
+    lab_space_name="Genomic Research Lab",        # display name in RP1
 )
 ```
 
@@ -165,6 +190,13 @@ SMITHERY_KEY=
 # === AlphaFold3 ===
 ALPHAFOLD3_ENDPOINT=https://alphafold3.api.example.com
 ALPHAFOLD3_API_KEY=
+
+# === RP1 Spatial Internet ===
+RP1_API_KEY=REPLACE_ME
+RP1_FABRIC_ID=fab-REPLACE_ME
+RP1_API_BASE_URL=https://api.rp1.com/v1
+RP1_SOCKET_URL=https://socket.rp1.com
+RP1_NSO_HOST=https://nso.genomic.agicorp.network
 
 # === Blockchain / DeSci ===
 ETHEREUM_NETWORK=sepolia

@@ -30,6 +30,12 @@ This page describes the system architecture of the Genomic.go Platform — its c
   │               External Integrations                    │
   │  AlphaFold3 · Robotics · FHIR APIs · Ethereum/web3    │
   └────────────────────────────────────────────────────────┘
+          │
+  ┌───────▼────────────────────────────────────────────────┐
+  │           RP1 Spatial Internet (Visualisation)         │
+  │  Compound NSO · Trial NSO · Protein NSO · Agent NSO   │
+  │  Collaborative Virtual Research Lab (REST + Socket.IO) │
+  └────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -172,9 +178,14 @@ On-chain intellectual property management using Ethereum.
         │
 8. Results gathered via asyncio.gather() across all agents
         │
-9. IP-NFT minted on Ethereum for the research output
+9. Results streamed to RP1 virtual lab via GenomicSpatialSession:
+   - Compound cards → Compound Explorer NSO
+   - Protein ribbons → Protein Viewer NSO
+   - Agent events → Agent Activity Feed NSO
         │
-10. Results returned to user via API
+10. IP-NFT minted on Ethereum for the research output
+        │
+11. Results returned to user via API
 ```
 
 ---
@@ -188,6 +199,7 @@ On-chain intellectual property management using Ethereum.
 | Document | MongoDB | Agent conversations, workflow configs |
 | Event stream | Kafka | Real-time trial and safety events |
 | Blockchain | Ethereum | IP-NFT records |
+| Spatial fabric | RP1 | Virtual lab NSO registry, researcher presence |
 
 ---
 
@@ -242,7 +254,8 @@ The platform is built on Python `asyncio` throughout:
 4. **Cost-aware**: Kalibr router minimizes LLM spend dynamically
 5. **Compliance-first**: HIPAA, GDPR, SOC 2 Type II compliance built into data flows
 6. **Observable**: Every component emits structured logs and Prometheus metrics
+7. **Spatially-aware**: Research workflows surfaced in a collaborative 3D environment via RP1
 
 ---
 
-_Next: [Getting Started](Getting-Started.md) | [API Reference](API-Reference.md)_
+_Next: [Getting Started](Getting-Started.md) | [Integrations Deep Dive](Integrations-Deep-Dive.md) | [API Reference](API-Reference.md)_

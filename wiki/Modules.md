@@ -9,17 +9,18 @@ Detailed documentation for every Python module in the `src/` directory.
 ```
 src/
 ├── clinical_trials/
-│   └── realtime_optimizer.py          ~427 lines
+│   └── realtime_optimizer.py              ~427 lines
 ├── compound_library/
-│   ├── compound_searcher.py           ~211 lines
-│   └── init_compound_library.py       ~211 lines
+│   ├── compound_searcher.py               ~211 lines
+│   └── init_compound_library.py           ~211 lines
 └── integrations/
-    ├── nanda_agent_integration.py     ~367 lines
-    ├── alphafold3_nanda_integration.py ~156 lines
-    └── robotics_nanda_integration.py  ~105 lines
+    ├── nanda_agent_integration.py         ~367 lines
+    ├── alphafold3_nanda_integration.py    ~156 lines
+    ├── robotics_nanda_integration.py      ~105 lines
+    └── rp1_metaverse_integration.py       ~540 lines
 ```
 
-Total core implementation: ~1,477 lines
+Total core implementation: ~2,017 lines
 
 ---
 
@@ -461,4 +462,148 @@ Planned capabilities:
 
 ---
 
-_Next: [API Reference](API-Reference.md) | [Algorithms](Algorithms.md)_
+## `src/integrations/rp1_metaverse_integration.py`
+
+### Purpose
+
+Bridges the Genomic.go Platform with the **RP1 Spatial Internet** (https://rp1.com) to render research workflows as interactive 3D objects inside a collaborative virtual research lab.
+
+See the dedicated [RP1 Metaverse Integration](RP1-Metaverse-Integration.md) page for the full guide.
+
+---
+
+### Dataclass: `RP1Config`
+
+Configuration for the RP1 connection. All fields fall back to environment variables.
+
+| Field | Env var | Default |
+|-------|---------|---------|
+| `api_key` | `RP1_API_KEY` | — |
+| `fabric_id` | `RP1_FABRIC_ID` | — |
+| `base_url` | `RP1_API_BASE_URL` | `https://api.rp1.com/v1` |
+| `socket_url` | `RP1_SOCKET_URL` | `https://socket.rp1.com` |
+| `nso_host` | `RP1_NSO_HOST` | `https://nso.genomic.agicorp.network` |
+| `lab_space_name` | — | `"Genomic Research Lab"` |
+
+---
+
+### Enum: `NSObjectType`
+
+| Value | NSO |
+|-------|-----|
+| `COMPOUND_VIEWER` | 3D compound card explorer |
+| `TRIAL_DASHBOARD` | Live trial metrics wall |
+| `PROTEIN_VIEWER` | AlphaFold3 ribbon diagram viewer |
+| `AGENT_FEED` | NANDA swarm activity ticker |
+| `COLLABORATION` | Presence and shared workspace hub |
+
+---
+
+### Dataclass: `SpatialPosition`
+
+3D position and yaw inside the RP1 spatial fabric.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `x` | `float` | Left–right position |
+| `y` | `float` | Up–down position |
+| `z` | `float` | Forward–back position |
+| `rotation_y` | `float` | Yaw in degrees |
+
+---
+
+### Class: `RP1SpatialClient`
+
+Low-level HTTP client for the RP1 REST API. Handles auth headers, request construction, and error propagation.
+
+| Method | HTTP | Description |
+|--------|------|-------------|
+| `get_fabric()` | `GET /fabrics/{id}` | Retrieve fabric metadata |
+| `register_nso(payload)` | `POST /fabrics/{id}/nso` | Register an NSO |
+| `update_nso(nso_id, payload)` | `PATCH .../nso/{nso_id}` | Update NSO config |
+| `list_nso()` | `GET .../nso` | List all registered NSOs |
+| `delete_nso(nso_id)` | `DELETE .../nso/{nso_id}` | Remove an NSO |
+| `push_spatial_event(nso_id, event, payload)` | `POST .../nso/{nso_id}/events` | Push a one-shot event |
+| `get_presence()` | `GET .../presence` | List researchers in lab |
+
+---
+
+### Class: `RP1RealtimeStream`
+
+Socket.IO event emitter that routes platform data to specific NSOs. Maintains a registry mapping `NSObjectType → nso_id`.
+
+| Method | NSO target | Payload type |
+|--------|-----------|-------------|
+| `emit_compound(viz)` | `COMPOUND_VIEWER` | `CompoundVisualization` |
+| `emit_trial_update(update)` | `TRIAL_DASHBOARD` | `TrialDashboardUpdate` |
+| `emit_agent_event(event)` | `AGENT_FEED` | `AgentActivityEvent` |
+| `emit_protein_structure(...)` | `PROTEIN_VIEWER` | Inline dict |
+
+---
+
+### Class: `RP1SpatialIntegration`
+
+Mid-level orchestrator managing NSO lifecycle and stream dispatch.
+
+**`async initialize_virtual_lab() -> Dict`**
+
+Verifies fabric connectivity then registers all 5 NSOs at their default spatial positions. Idempotent — safe to call on restart.
+
+**`async teardown_virtual_lab() -> None`**
+
+Deregisters all NSOs and clears the internal registry.
+
+**`async stream_compound_to_lab(compound, position) -> bool`**
+
+Converts a `CompoundSearcher` result dict into a `CompoundVisualization` and emits it to the compound viewer NSO.
+
+**`async stream_trial_update(trial_id, arm_ratios, enrolled, ae_rate, ...) -> bool`**
+
+Derives `safety_status` from `ae_rate` and emits a `TrialDashboardUpdate`.
+
+| ae_rate | safety_status |
+|---------|--------------|
+| < 8% | `green` |
+| 8–15% | `yellow` |
+| > 15% | `red` |
+
+**`async stream_protein_structure(task_id, sequence, pdb_url, position) -> bool`**
+
+Emits an AlphaFold3 result to the protein viewer NSO.
+
+**`async stream_agent_event(agent_id, agent_type, event_type, description, metadata) -> bool`**
+
+Emits a NANDA agent event to the agent feed NSO. `event_type` is one of `task_started`, `task_completed`, `task_failed`.
+
+**`async get_active_researchers() -> List[Dict]`**
+
+Returns presence list from RP1 API.
+
+---
+
+### Class: `GenomicSpatialSession`
+
+Top-level session coordinator. Wire this into the rest of the platform to route research events to the virtual lab.
+
+**Lifecycle methods:**
+
+| Method | Description |
+|--------|-------------|
+| `start()` | Initialise virtual lab, register NSOs |
+| `stop()` | Tear down lab, deregister NSOs |
+
+**Event hooks:**
+
+| Method | Trigger | NSO updated |
+|--------|---------|-------------|
+| `on_compound_found(compound, position)` | `CompoundSearcher.search()` result | Compound Explorer |
+| `on_trial_metrics(trial_id, arm_ratios, enrolled, ae_rate, ...)` | After each allocation/outcome | Trial Dashboard |
+| `on_structure_predicted(task_id, seq, pdb_url, position)` | AlphaFold3 completion | Protein Viewer |
+| `on_agent_task_started(agent_id, type, desc)` | NANDA agent task begin | Agent Feed |
+| `on_agent_task_completed(agent_id, type, desc, result)` | NANDA agent task end | Agent Feed |
+| `on_agent_task_failed(agent_id, type, error)` | NANDA agent failure | Agent Feed |
+| `get_present_researchers()` | Read-only presence query | — |
+
+---
+
+_Next: [API Reference](API-Reference.md) | [Algorithms](Algorithms.md) | [RP1 Metaverse Integration](RP1-Metaverse-Integration.md)_
