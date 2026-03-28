@@ -1,0 +1,385 @@
+# API Reference
+
+This page documents all HTTP endpoints, Kafka topics, and request/response schemas exposed by the Genomic.go Platform.
+
+---
+
+## HTTP Endpoints
+
+The API gateway is built with FastAPI and served over HTTPS with JWT Bearer token authentication.
+
+**Base URL:** `https://api.genomic.agicorp.network/v1`
+
+**Authentication header:**
+```
+Authorization: Bearer <jwt_token>
+```
+
+---
+
+### Agent Endpoints
+
+#### `POST /v1/agents/compound-search`
+
+Semantic search over the compound library.
+
+**Request body:**
+```json
+{
+  "query": "EGFR kinase inhibitor for lung cancer",
+  "limit": 10,
+  "filters": {
+    "therapeutic_area": "Oncology",
+    "clinical_phase": "Approved",
+    "target_protein": "EGFR",
+    "mw_min": 200,
+    "mw_max": 700
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "results": [
+    {
+      "compound_id": "CHEMBL475825",
+      "name": "Erlotinib",
+      "score": 0.923,
+      "smiles": "C#Cc1cccc(Nc2ncnc3cc(OCC)c(OCC)cc23)c1",
+      "molecular_weight": 393.4,
+      "target_protein": "EGFR",
+      "mechanism": "Tyrosine kinase inhibitor",
+      "therapeutic_area": "Oncology",
+      "clinical_phase": "Approved"
+    }
+  ],
+  "total": 10,
+  "query_time_ms": 42
+}
+```
+
+---
+
+#### `POST /v1/agents/protein-predict`
+
+Predict protein structure using AlphaFold3 via the NANDA distributed network.
+
+**Request body:**
+```json
+{
+  "sequence": "MKTIIALSYIFCLVFA...",
+  "model_seeds": [1, 2, 3],
+  "redundancy_factor": 2
+}
+```
+
+**Response:**
+```json
+{
+  "task_id": "af3-task-abc123",
+  "status": "PROCESSING",
+  "estimated_time_seconds": 120
+}
+```
+
+Poll for result:
+```
+GET /v1/agents/protein-predict/{task_id}
+```
+
+---
+
+#### `GET /v1/agents/compound-search/similar/{compound_id}`
+
+Find compounds similar to a known reference compound.
+
+**Path parameter:** `compound_id` — Qdrant point ID (e.g. `CHEMBL475825`)
+
+**Query parameters:**
+- `limit` (int, default 10) — number of results
+
+**Response:** Same schema as compound-search results array.
+
+---
+
+### Workflow Endpoints
+
+#### `POST /v1/workflows/drug-discovery`
+
+Execute the complete drug discovery pipeline for a gene target.
+
+**Request body:**
+```json
+{
+  "target_gene": "EGFR",
+  "therapeutic_area": "Oncology",
+  "max_compounds": 50,
+  "include_structure_prediction": true
+}
+```
+
+**Response:**
+```json
+{
+  "workflow_id": "wf-xyz789",
+  "status": "running",
+  "stages": [
+    "literature_analysis",
+    "compound_discovery",
+    "genomics_analysis",
+    "structure_prediction"
+  ]
+}
+```
+
+Poll:
+```
+GET /v1/workflows/drug-discovery/{workflow_id}
+```
+
+---
+
+#### `GET /v1/workflows/drug-discovery/{workflow_id}`
+
+Get the status and results of a running or completed workflow.
+
+**Response:**
+```json
+{
+  "workflow_id": "wf-xyz789",
+  "status": "completed",
+  "target_gene": "EGFR",
+  "results": {
+    "literature_summary": "...",
+    "top_compounds": [...],
+    "genomics_insights": "...",
+    "predicted_structures": [...]
+  },
+  "ip_nft_tx": "0xabc123..."
+}
+```
+
+---
+
+### Clinical Trial Endpoints
+
+#### `POST /v1/trials/{trial_id}/allocate`
+
+Allocate a patient to a treatment arm using Thompson sampling.
+
+**Request body:**
+```json
+{
+  "patient_id": "PT-00042"
+}
+```
+
+**Response:**
+```json
+{
+  "patient_id": "PT-00042",
+  "allocated_arm": "treatment_A",
+  "allocation_ratios": {
+    "treatment_A": 0.68,
+    "placebo": 0.32
+  }
+}
+```
+
+---
+
+#### `POST /v1/trials/{trial_id}/outcome`
+
+Record a patient's outcome to update the Bayesian posterior.
+
+**Request body:**
+```json
+{
+  "patient_id": "PT-00042",
+  "arm": "treatment_A",
+  "success": true
+}
+```
+
+**Response:**
+```json
+{
+  "updated_ratios": {
+    "treatment_A": 0.71,
+    "placebo": 0.29
+  },
+  "should_stop": false,
+  "stopping_reason": null
+}
+```
+
+---
+
+#### `POST /v1/trials/match-patient`
+
+Find matching open clinical trials for a patient profile.
+
+**Request body:**
+```json
+{
+  "patient_id": "PT-00042",
+  "age": 58,
+  "sex": "F",
+  "genomic_variants": ["APOE4", "BRCA1"],
+  "biomarkers": {"PSA": 4.2, "CA-125": 35},
+  "comorbidities": ["Hypertension"],
+  "medications": ["Metformin"]
+}
+```
+
+**Response:**
+```json
+{
+  "matches": [
+    {
+      "trial_id": "NCT-001234",
+      "title": "Phase III EGFR Inhibitor Study",
+      "phase": "Phase III",
+      "similarity_score": 0.89,
+      "eligibility": "eligible"
+    }
+  ]
+}
+```
+
+---
+
+### Agent Management Endpoints
+
+These endpoints are exposed on each individual NANDA agent process.
+
+#### `GET /health`
+
+Agent liveness check.
+
+**Response:** `200 OK` if healthy.
+
+#### `POST /api/tasks`
+
+Submit a research task to the agent.
+
+**Request body:**
+```json
+{
+  "task_type": "literature_search",
+  "payload": {
+    "query": "EGFR inhibitor resistance mechanisms",
+    "max_papers": 20
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "task_id": "task-abc",
+  "status": "accepted"
+}
+```
+
+#### `POST /api/shutdown`
+
+Gracefully shut down the agent.
+
+---
+
+## Kafka Topics
+
+The platform uses Apache Kafka for real-time event streaming between the clinical trials module and monitoring systems.
+
+### `trial-allocations`
+
+**Direction:** Platform → Consumers  
+**Schema:**
+```json
+{
+  "trial_id": "TRIAL-001",
+  "patient_id": "PT-00042",
+  "allocated_arm": "treatment_A",
+  "timestamp": "2026-03-28T07:16:50Z",
+  "allocation_probabilities": {
+    "treatment_A": 0.68,
+    "placebo": 0.32
+  }
+}
+```
+
+---
+
+### `trial-alerts`
+
+**Direction:** Platform → Consumers  
+**Schema:**
+```json
+{
+  "trial_id": "TRIAL-001",
+  "alert_type": "safety_threshold_exceeded",
+  "severity": "high",
+  "ae_rate_7day": 0.18,
+  "threshold": 0.15,
+  "timestamp": "2026-03-28T07:16:50Z",
+  "recommended_action": "dsmb_review"
+}
+```
+
+Alert types:
+- `safety_threshold_exceeded` — AE rate above configured threshold
+- `futility_boundary_crossed` — Trial unlikely to show effect
+- `superiority_boundary_crossed` — Early stopping for efficacy
+
+---
+
+### `adverse-events`
+
+**Direction:** External systems → Platform  
+**Schema:**
+```json
+{
+  "trial_id": "TRIAL-001",
+  "patient_id": "PT-00042",
+  "event_type": "grade_3_nausea",
+  "severity": "grade_3",
+  "timestamp": "2026-03-28T07:16:50Z",
+  "reported_by": "site_001"
+}
+```
+
+---
+
+## Error Responses
+
+All HTTP endpoints use standard error format:
+
+```json
+{
+  "error": {
+    "code": "COMPOUND_NOT_FOUND",
+    "message": "Compound CHEMBL999999 not found in library",
+    "request_id": "req-abc123"
+  }
+}
+```
+
+### HTTP Status Codes
+
+| Code | Meaning |
+|------|---------|
+| `200` | Success |
+| `201` | Created |
+| `400` | Bad request (invalid input) |
+| `401` | Unauthorized (missing/invalid JWT) |
+| `403` | Forbidden (insufficient permissions) |
+| `404` | Resource not found |
+| `429` | Rate limit exceeded |
+| `500` | Internal server error |
+| `503` | Service unavailable (agent down) |
+
+---
+
+_Next: [Algorithms](Algorithms.md) | [Configuration](Configuration.md)_
