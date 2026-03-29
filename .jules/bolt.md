@@ -1,0 +1,3 @@
+## 2026-03-29 - [O(1) Sliding Window for Safety Monitoring]
+**Learning:** Unbounded list growth and repeated full-buffer scans (O(N) operations) are a major performance bottleneck and memory leak risk in long-running streaming systems. Parsing strings to datetimes in a loop is particularly expensive.
+**Action:** Use `collections.deque` for efficient O(1) removals from the front, maintain running counters for aggregations, and pre-parse/store parsed objects (like datetimes) to avoid redundant work in hot paths. Always ensure timezone consistency (UTC-aware) to prevent runtime comparison errors.
