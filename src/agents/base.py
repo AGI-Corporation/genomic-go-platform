@@ -167,7 +167,7 @@ class GenomicAgent(ABC):
         if self._memory is not None:
             return self._memory
         if self._redis_url:
-            from src.agents.memory import AgentMemory  # lazy import
+            from .memory import AgentMemory  # lazy import
 
             self._memory = AgentMemory(redis_url=self._redis_url)
         return self._memory

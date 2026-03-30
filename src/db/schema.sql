@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS gene_pathways (
 
 -- Experiments
 CREATE TABLE IF NOT EXISTS experiments (
-    experiment_id UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    experiment_id UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     agent_id      TEXT        NOT NULL,
     type          VARCHAR(100) NOT NULL,
     input_data    JSONB,
