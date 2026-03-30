@@ -17,6 +17,7 @@ import asyncio
 import json
 import logging
 import uuid
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
@@ -27,16 +28,6 @@ import qdrant_client
 from aiokafka import AIOKafkaConsumer
 from kafka import KafkaProducer
 from scipy.stats import beta, norm
-import pandas as pd
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from scipy.stats import beta, norm
-import qdrant_client
-from kafka import KafkaProducer
-from aiokafka import AIOKafkaConsumer
-import json
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -311,7 +302,9 @@ class SafetyMonitoringSystem:
     def __init__(self, trial_id: str, safety_threshold: float = 0.15):
         self.trial_id = trial_id
         self.safety_threshold = safety_threshold
-        self.ae_buffer = []
+        # Bolt Optimization: Use deque for O(1) removals from front
+        self.ae_buffer = deque()
+        self.severe_count = 0  # Running counter for severe events in window
         self.alert_history = []
 
     async def monitor_adverse_event_stream(self, kafka_topic: str = "adverse-events"):
@@ -337,23 +330,36 @@ class SafetyMonitoringSystem:
             await consumer.stop()
 
     async def process_adverse_event(self, event: Dict):
-        """Process single AE and check for safety signals"""
-        self.ae_buffer.append(event)
+        """
+        Process single AE and check for safety signals.
+        Bolt Optimization: O(1) amortized sliding window with running aggregations.
+        """
+        # Parse and ensure timezone awareness for robust comparison
+        event_time = datetime.fromisoformat(event["timestamp"])
+        if event_time.tzinfo is None:
+            event_time = event_time.replace(tzinfo=timezone.utc)
 
-        # Calculate rolling AE rate
-        recent_aes = [
-            e
-            for e in self.ae_buffer
-            if datetime.fromisoformat(e["timestamp"])
-            > datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
-        ]
+        # Store (parsed_time, original_event) to avoid re-parsing ISO strings
+        self.ae_buffer.append((event_time, event))
+        if event["severity"] >= 3:
+            self.severe_count += 1
 
-        if len(recent_aes) > 10:  # Minimum for statistical power
-            severe_ae_rate = sum(1 for e in recent_aes if e["severity"] >= 3) / len(
-                recent_aes
-            )
+        # Bolt Optimization: Sliding window pruning
+        # Assuming events are mostly chronological, we prune from the left
+        cutoff_time = datetime.now(timezone.utc) - timedelta(days=7)
+        while self.ae_buffer and self.ae_buffer[0][0] < cutoff_time:
+            old_time, old_event = self.ae_buffer.popleft()
+            if old_event["severity"] >= 3:
+                self.severe_count -= 1
+
+        # Check safety threshold using running severe_count
+        buffer_len = len(self.ae_buffer)
+        if buffer_len > 10:  # Minimum for statistical power
+            severe_ae_rate = self.severe_count / buffer_len
 
             if severe_ae_rate > self.safety_threshold:
+                # Keep compatibility with original signature by extracting events
+                recent_aes = [e for _, e in self.ae_buffer]
                 await self.trigger_safety_alert(severe_ae_rate, recent_aes)
 
     async def trigger_safety_alert(self, rate: float, events: List[Dict]):
