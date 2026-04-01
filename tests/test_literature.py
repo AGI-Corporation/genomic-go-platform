@@ -2,8 +2,10 @@
 
 import sys
 import os
+import time
 
 import pytest
+import requests as req
 from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -206,8 +208,6 @@ class TestPubMedClient:
 
     def test_search_with_network_error(self, client):
         """Search should return empty list on network failure."""
-        import requests as req
-
         with patch.object(
             client.session, "get", side_effect=req.exceptions.ConnectionError("Network error")
         ):
@@ -219,8 +219,6 @@ class TestPubMedClient:
         assert articles == []
 
     def test_fetch_articles_network_error(self, client):
-        import requests as req
-
         with patch.object(
             client.session, "get", side_effect=req.exceptions.Timeout("timeout")
         ):
@@ -247,8 +245,6 @@ class TestPubMedClient:
         assert result == "Hello World"
 
     def test_rate_limit_delays(self, client):
-        import time
-
         client._last_request_time = time.time()
         start = time.time()
         client._rate_limit()

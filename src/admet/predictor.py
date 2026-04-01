@@ -484,7 +484,8 @@ class ADMETPredictor:
         half_life = max(1.0, 12.0 - 1.5 * cyp_count + 0.3 * d.logp)
 
         # Clearance (mL/min/kg)
-        clearance = math.log(2) / (half_life * 60) * d.volume_of_distribution_estimate(d)
+        vd = max(0.1, 0.5 + 0.6 * d.logp - 0.002 * d.molecular_weight)
+        clearance = math.log(2) / (half_life * 60) * vd
 
         return MetabolismProfile(
             cyp1a2_substrate=cyp1a2_sub,
@@ -713,11 +714,3 @@ class ADMETPredictor:
             return 1.0 / (1.0 + math.exp(-x))
         exp_x = math.exp(x)
         return exp_x / (1.0 + exp_x)
-
-
-# Attach helper method used in _predict_metabolism without circular reference
-def _volume_of_distribution_estimate(self, d: MolecularDescriptors) -> float:
-    return max(0.1, 0.5 + 0.6 * d.logp - 0.002 * d.molecular_weight)
-
-
-MolecularDescriptors.volume_of_distribution_estimate = _volume_of_distribution_estimate

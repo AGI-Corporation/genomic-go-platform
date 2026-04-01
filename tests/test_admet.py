@@ -165,19 +165,3 @@ class TestADMETPredictor:
     def test_predict_handles_unknown_compound_id(self, predictor):
         profile = predictor.predict(SIMPLE_SMILES)
         assert profile.compound_id == "unknown"
-
-    def test_volume_of_distribution_estimate_helper(self):
-        """Test that the dynamically attached helper method works."""
-        desc = MolecularDescriptors(
-            smiles="CCO",
-            molecular_weight=46.0,
-            logp=-0.3,
-            hbd=1,
-            hba=1,
-            tpsa=20.2,
-            rotatable_bonds=0,
-            aromatic_rings=0,
-            heavy_atom_count=3,
-        )
-        vd = desc.volume_of_distribution_estimate(desc)
-        assert vd > 0

@@ -636,8 +636,10 @@ async def run_gwas(request: GWASAnalysisRequest) -> GWASAnalysisResponse:
         n_samples = request.n_cases + request.n_controls
         n_variants = min(request.n_variants, 10_000)  # Cap for API performance
 
-        # Simulate genotype matrix
-        variant_ids = [f"chr{rng.integers(1, 22)}:{rng.integers(1_000_000, 250_000_000)}" for _ in range(n_variants)]
+        # Simulate genotype matrix (vectorized ID generation)
+        chroms = rng.integers(1, 22, size=n_variants)
+        positions = rng.integers(1_000_000, 250_000_000, size=n_variants)
+        variant_ids = [f"chr{c}:{p}" for c, p in zip(chroms.tolist(), positions.tolist())]
         genotype_data = rng.integers(0, 3, size=(n_samples, n_variants))
         genotype_matrix = pd.DataFrame(genotype_data, columns=variant_ids)
 
