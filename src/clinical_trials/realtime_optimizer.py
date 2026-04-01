@@ -228,7 +228,6 @@ class AdaptiveTrialDesign:
             # Don't raise - alerting failure shouldn't stop trial
 
 
-
 class RealTimePatientMatcher:
     """
     AI-powered patient-to-trial matching with genomic and clinical features.

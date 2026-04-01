@@ -62,11 +62,11 @@ class NANDAAgentIntegration:
                 f"Deploying {agent_type} agent with specialization: {specialization}"
             )
 
-            # Use NANDA SDK to deploy agent
+            # Build the command without embedding secrets as positional arguments.
+            # API keys are passed via environment variables to avoid leaking them in
+            # the process list (visible via `ps aux` or /proc/<pid>/cmdline).
             cmd = [
                 "nanda-sdk",
-                "--anthropic-key",
-                self.config.anthropic_key,
                 "--domain",
                 self.config.domain,
             ]
@@ -74,15 +74,22 @@ class NANDAAgentIntegration:
             if self.config.agent_id:
                 cmd.extend(["--agent-id", self.config.agent_id])
 
-            if self.config.smithery_key:
-                cmd.extend(["--smithery-key", self.config.smithery_key])
-
             if self.config.registry_url:
                 cmd.extend(["--registry-url", f"https://{self.config.registry_url}"])
 
+            # Secrets are injected as environment variables, not CLI flags
+            env = {
+                "ANTHROPIC_API_KEY": self.config.anthropic_key,
+            }
+            if self.config.smithery_key:
+                env["SMITHERY_API_KEY"] = self.config.smithery_key
+
             # Execute deployment
             process = await asyncio.create_subprocess_exec(
-                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env,
             )
 
             stdout, stderr = await process.communicate()
