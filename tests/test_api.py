@@ -2,6 +2,7 @@
 
 import os
 import sys
+import types
 import pytest
 from unittest.mock import patch
 
@@ -250,9 +251,6 @@ class TestCompoundSearchMethod:
 
     def test_successful_search_returns_results(self):
         """Valid query with mocked CompoundSearcher returns result list."""
-        import sys
-        import types
-
         mock_results = [{"id": "CMP-001", "name": "Aspirin", "score": 0.95}]
 
         class MockSearcher:

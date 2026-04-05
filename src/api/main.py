@@ -229,10 +229,10 @@ async def rpc_endpoint(
     try:
         result = handler(rpc_req.params)
         return JSONResponse(content=_success_response(result, rpc_req.id))
-    except ValueError as exc:
+    except ValueError:
         return JSONResponse(
             status_code=400,
-            content=_error_response(ERROR_INVALID_PARAMS, str(exc), rpc_req.id),
+            content=_error_response(ERROR_INVALID_PARAMS, "Invalid params", rpc_req.id),
         )
     except Exception:
         logger.exception("Unhandled error in method %s", rpc_req.method)
