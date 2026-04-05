@@ -247,3 +247,37 @@ class TestCompoundSearchMethod:
         )
         assert response.status_code == 400
         assert response.json()["error"]["code"] == -32602
+
+    def test_successful_search_returns_results(self):
+        """Valid query with mocked CompoundSearcher returns result list."""
+        import sys
+        import types
+
+        mock_results = [{"id": "CMP-001", "name": "Aspirin", "score": 0.95}]
+
+        class MockSearcher:
+            def search(self, **kw):
+                return mock_results
+
+        fake_mod = types.ModuleType("compound_library.compound_searcher")
+        fake_mod.CompoundSearcher = MockSearcher
+
+        original = sys.modules.get("compound_library.compound_searcher")
+        sys.modules["compound_library.compound_searcher"] = fake_mod
+        try:
+            response = client.post(
+                "/rpc",
+                json=_rpc_body("compound.search", params={"query": "antiviral"}),
+                headers=_auth_headers(),
+            )
+        finally:
+            if original is None:
+                sys.modules.pop("compound_library.compound_searcher", None)
+            else:
+                sys.modules["compound_library.compound_searcher"] = original
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "result" in data
+        assert "results" in data["result"]
+        assert data["result"]["results"] == mock_results

@@ -10,12 +10,18 @@ The expected token is read from the ``GENOMIC_API_TOKEN`` environment variable.
 """
 
 import os
+import sys
 import logging
 from typing import Any, Optional, Union
 
 from fastapi import FastAPI, Request, Header
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
+
+# Ensure the src directory is on the path for sibling package imports.
+_SRC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
 
 logger = logging.getLogger(__name__)
 
@@ -141,8 +147,6 @@ def _handle_compound_search(params: Any) -> dict:
 
     # Lazy import so the API starts even without heavy ML dependencies installed.
     try:
-        import sys, os as _os
-        sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), ".."))
         from compound_library.compound_searcher import CompoundSearcher  # noqa: PLC0415
 
         searcher = CompoundSearcher()
@@ -154,7 +158,7 @@ def _handle_compound_search(params: Any) -> dict:
         return {"results": results}
     except Exception as exc:  # pragma: no cover
         logger.error("compound.search failed: %s", exc)
-        raise RuntimeError(str(exc)) from exc
+        raise RuntimeError("compound.search failed") from exc
 
 
 _METHOD_REGISTRY: dict[str, Any] = {
@@ -200,12 +204,12 @@ async def rpc_endpoint(
     # --- 3. Validate JSON-RPC envelope ---
     try:
         rpc_req = JsonRpcRequest(**body)
-    except Exception as exc:
+    except Exception:
         return JSONResponse(
             status_code=400,
             content=_error_response(
                 ERROR_INVALID_REQUEST,
-                f"Invalid Request: {exc}",
+                "Invalid Request",
                 body.get("id") if isinstance(body, dict) else None,
             ),
         )
@@ -230,7 +234,7 @@ async def rpc_endpoint(
             status_code=400,
             content=_error_response(ERROR_INVALID_PARAMS, str(exc), rpc_req.id),
         )
-    except Exception as exc:
+    except Exception:
         logger.exception("Unhandled error in method %s", rpc_req.method)
         return JSONResponse(
             status_code=500,
