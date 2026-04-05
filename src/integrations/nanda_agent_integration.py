@@ -17,7 +17,7 @@ import os
 import subprocess
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Any
-import requests
+import aiohttp
 import json
 from datetime import datetime
 
@@ -44,6 +44,20 @@ class NANDAAgentIntegration:
         self.config = config
         self.deployed_agents: Dict[str, Any] = {}
         self.agent_states: Dict[str, str] = {}
+        self._session: Optional[aiohttp.ClientSession] = None
+
+    async def get_session(self) -> aiohttp.ClientSession:
+        """Get or create an aiohttp ClientSession for non-blocking requests"""
+        if self._session is None or self._session.closed:
+            # Using a larger connection pool to handle concurrent agent tasks
+            connector = aiohttp.TCPConnector(limit=100)
+            self._session = aiohttp.ClientSession(connector=connector)
+        return self._session
+
+    async def close(self):
+        """Close the aiohttp ClientSession"""
+        if self._session and not self._session.closed:
+            await self._session.close()
 
     async def deploy_research_agent(
         self, agent_type: str, specialization: str
@@ -125,16 +139,19 @@ class NANDAAgentIntegration:
         """
         logger.info(f"Creating swarm of {swarm_size} {swarm_type} agents")
 
-        agents = []
+        # Optimization: Deploy agents in parallel using asyncio.gather
+        # instead of sequential loop with sleep
+        tasks = []
         for i in range(swarm_size):
-            agent_info = await self.deploy_research_agent(
-                agent_type=swarm_type, specialization=f"{swarm_type}_agent_{i+1}"
+            tasks.append(
+                self.deploy_research_agent(
+                    agent_type=swarm_type, specialization=f"{swarm_type}_agent_{i+1}"
+                )
             )
-            agents.append(agent_info)
-            await asyncio.sleep(2)  # Stagger deployments
 
+        agents = await asyncio.gather(*tasks)
         logger.info(f"Successfully created swarm with {len(agents)} agents")
-        return agents
+        return list(agents)
 
     async def send_task_to_agent(
         self, agent_id: str, task: Dict[str, Any]
@@ -152,21 +169,22 @@ class NANDAAgentIntegration:
             raise ValueError(f"Agent {agent_id} not found in deployed agents")
 
         agent = self.deployed_agents[agent_id]
+        session = await self.get_session()
 
         try:
-            # Send task via HTTP POST to agent endpoint
-            response = requests.post(
+            # Send task via non-blocking aiohttp POST to agent endpoint
+            async with session.post(
                 f"{agent['endpoint']}/api/tasks",
                 json=task,
-                timeout=300,  # 5 minute timeout for long-running tasks
-            )
-
-            if response.status_code == 200:
-                result = response.json()
-                logger.info(f"Task completed by agent {agent_id}")
-                return result
-            else:
-                raise Exception(f"Task execution failed: {response.text}")
+                timeout=aiohttp.ClientTimeout(total=300),
+            ) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    logger.info(f"Task completed by agent {agent_id}")
+                    return result
+                else:
+                    text = await response.text()
+                    raise Exception(f"Task execution failed: {text}")
 
         except Exception as e:
             logger.error(f"Error sending task to agent {agent_id}: {str(e)}")
@@ -219,7 +237,7 @@ class NANDAAgentIntegration:
 
         return successful_results
 
-    def get_agent_status(self, agent_id: str) -> Dict[str, Any]:
+    async def get_agent_status(self, agent_id: str) -> Dict[str, Any]:
         """Get current status of an agent
 
         Args:
@@ -233,18 +251,22 @@ class NANDAAgentIntegration:
 
         agent = self.deployed_agents[agent_id]
         state = self.agent_states.get(agent_id, "unknown")
+        health = await self._check_agent_health(agent)
 
         return {
             **agent,
             "current_state": state,
-            "health": self._check_agent_health(agent),
+            "health": health,
         }
 
-    def _check_agent_health(self, agent: Dict[str, Any]) -> str:
+    async def _check_agent_health(self, agent: Dict[str, Any]) -> str:
         """Check health of an agent endpoint"""
+        session = await self.get_session()
         try:
-            response = requests.get(f"{agent['endpoint']}/health", timeout=5)
-            return "healthy" if response.status_code == 200 else "unhealthy"
+            async with session.get(
+                f"{agent['endpoint']}/health", timeout=aiohttp.ClientTimeout(total=5)
+            ) as response:
+                return "healthy" if response.status == 200 else "unhealthy"
         except Exception:
             return "unreachable"
 
@@ -269,18 +291,21 @@ class NANDAAgentIntegration:
 
         try:
             agent = self.deployed_agents[agent_id]
+            session = await self.get_session()
 
-            # Send shutdown signal
-            response = requests.post(f"{agent['endpoint']}/api/shutdown", timeout=10)
-
-            if response.status_code == 200:
-                self.agent_states[agent_id] = "stopped"
-                del self.deployed_agents[agent_id]
-                logger.info(f"Successfully shut down agent {agent_id}")
-                return True
-            else:
-                logger.error(f"Failed to shutdown agent {agent_id}")
-                return False
+            # Send shutdown signal via non-blocking aiohttp POST
+            async with session.post(
+                f"{agent['endpoint']}/api/shutdown",
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as response:
+                if response.status == 200:
+                    self.agent_states[agent_id] = "stopped"
+                    del self.deployed_agents[agent_id]
+                    logger.info(f"Successfully shut down agent {agent_id}")
+                    return True
+                else:
+                    logger.error(f"Failed to shutdown agent {agent_id}")
+                    return False
 
         except Exception as e:
             logger.error(f"Error shutting down agent {agent_id}: {str(e)}")
@@ -308,8 +333,14 @@ class GenomicResearchAgentSwarm:
             "structure_prediction": 2,
         }
 
+        # Optimization: Parallelize swarm creation across types
+        swarm_tasks = []
         for swarm_type, size in swarms.items():
-            agents = await self.nanda.create_agent_swarm(size, swarm_type)
+            swarm_tasks.append(self.nanda.create_agent_swarm(size, swarm_type))
+
+        swarm_results = await asyncio.gather(*swarm_tasks)
+
+        for (swarm_type, _), agents in zip(swarms.items(), swarm_results):
             self.research_agents[swarm_type] = [a["agent_id"] for a in agents]
             logger.info(f"Deployed {len(agents)} {swarm_type} agents")
 
@@ -360,8 +391,11 @@ if __name__ == "__main__":
     # Initialize and run
     async def main():
         swarm = GenomicResearchAgentSwarm(config)
-        await swarm.initialize_research_infrastructure()
-        results = await swarm.run_drug_discovery_workflow("EGFR")
-        print(json.dumps(results, indent=2))
+        try:
+            await swarm.initialize_research_infrastructure()
+            results = await swarm.run_drug_discovery_workflow("EGFR")
+            print(json.dumps(results, indent=2))
+        finally:
+            await swarm.nanda.close()
 
     asyncio.run(main())
