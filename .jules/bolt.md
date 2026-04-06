@@ -1,0 +1,3 @@
+## 2025-02-14 - Optimized sliding window for safety monitoring
+**Learning:** Unbounded list growth for event buffers combined with O(N) filtering in high-frequency paths (like Kafka event streams) leads to $O(N^2)$ cumulative performance degradation. Storing parsed datetime objects in a `collections.deque` alongside the event payload allows for O(1) amortized pruning and avoids redundant timestamp parsing.
+**Action:** Use `collections.deque` for sliding windows and maintain running aggregations (like `severe_count`) to keep event processing at O(1). Always ensure datetime objects are UTC-aware to prevent comparison failures.
