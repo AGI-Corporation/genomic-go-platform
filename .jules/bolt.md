@@ -1,0 +1,3 @@
+## 2026-02-14 - [O(1) Sliding Window for AE Processing]
+**Learning:** Using a list and re-filtering/re-parsing timestamps for every event in a rolling window is an O(N^2) anti-pattern. Using `collections.deque` with a `severe_count` running tally reduces this to amortized O(1). Additionally, mixed naive and aware datetime comparisons in Python 3 cause a `TypeError`, which must be handled by normalizing all incoming timestamps to UTC-aware objects.
+**Action:** Always prefer `deque` for sliding windows and maintain running aggregations (like counts or sums) to avoid re-iterating the buffer. Use `datetime.fromisoformat(ts).replace(tzinfo=timezone.utc)` (or similar) to ensure consistency across the application.
