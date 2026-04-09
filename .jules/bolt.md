@@ -1,0 +1,3 @@
+## 2026-02-14 - [O(1) Sliding Window for Safety Monitoring]
+**Learning:** Re-scanning an entire event buffer for rolling window aggregations (e.g., 7-day severe AE rate) creates an O(N) bottleneck per event, leading to O(N^2) total complexity. Implementing a sliding window with `collections.deque` and running tallies reduces this to O(1) per event. Additionally, robust stream processing requires explicit timezone handling (UTC-aware) to avoid comparison crashes between parsed ISO strings and `datetime.now()`.
+**Action:** Use `collections.deque` for time-based sliding windows and maintain running aggregations (counts, sums) to ensure O(1) event processing latency. Always normalize incoming timestamps to UTC-aware datetimes before comparison.
