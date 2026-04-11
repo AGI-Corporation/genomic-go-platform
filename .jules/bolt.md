@@ -1,0 +1,3 @@
+## 2026-02-14 - [O(1) Sliding Window Safety Monitoring]
+**Learning:** The `SafetyMonitoringSystem` was using a linear scan over an unbounded list for every incoming event, leading to O(N^2) complexity over time and memory leaks. Additionally, inconsistent datetime handling (naive vs aware) was a critical bug that caused crashes in production-like scenarios.
+**Action:** Use `collections.deque` for sliding windows and maintain running aggregations (like `severe_count`) to achieve O(1) amortized performance. Always ensure timestamps are parsed and stored as UTC-aware objects immediately upon entry to the system.
