@@ -17,6 +17,7 @@ import asyncio
 import json
 import logging
 import uuid
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
@@ -27,16 +28,6 @@ import qdrant_client
 from aiokafka import AIOKafkaConsumer
 from kafka import KafkaProducer
 from scipy.stats import beta, norm
-import pandas as pd
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from scipy.stats import beta, norm
-import qdrant_client
-from kafka import KafkaProducer
-from aiokafka import AIOKafkaConsumer
-import json
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -311,8 +302,9 @@ class SafetyMonitoringSystem:
     def __init__(self, trial_id: str, safety_threshold: float = 0.15):
         self.trial_id = trial_id
         self.safety_threshold = safety_threshold
-        self.ae_buffer = []
+        self.ae_buffer = deque()  # O(1) removals from the left
         self.alert_history = []
+        self.severe_count = 0  # O(1) tracking of severe events
 
     async def monitor_adverse_event_stream(self, kafka_topic: str = "adverse-events"):
         """
@@ -337,23 +329,37 @@ class SafetyMonitoringSystem:
             await consumer.stop()
 
     async def process_adverse_event(self, event: Dict):
-        """Process single AE and check for safety signals"""
-        self.ae_buffer.append(event)
+        """
+        Process single AE and check for safety signals.
+        Implements an O(1) sliding window for performance.
+        """
+        # Parse timestamp once
+        event_time = datetime.fromisoformat(event["timestamp"])
 
-        # Calculate rolling AE rate
-        recent_aes = [
-            e
-            for e in self.ae_buffer
-            if datetime.fromisoformat(e["timestamp"])
-            > datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
-        ]
+        # Add to buffer and update severe count
+        self.ae_buffer.append((event_time, event))
+        if event["severity"] >= 3:
+            self.severe_count += 1
 
-        if len(recent_aes) > 10:  # Minimum for statistical power
-            severe_ae_rate = sum(1 for e in recent_aes if e["severity"] >= 3) / len(
-                recent_aes
-            )
+        # Calculate cutoff for 7-day window
+        # Handle naive vs aware datetimes based on input to maintain compatibility
+        now = datetime.now(event_time.tzinfo if event_time.tzinfo else None)
+        cutoff = now - timedelta(days=7)
+
+        # Prune old events from the left (Sliding Window)
+        while self.ae_buffer and self.ae_buffer[0][0] < cutoff:
+            old_time, old_event = self.ae_buffer.popleft()
+            if old_event["severity"] >= 3:
+                self.severe_count -= 1
+
+        # Use the running severe_count for O(1) safety check
+        if len(self.ae_buffer) > 10:  # Minimum for statistical power
+            severe_ae_rate = self.severe_count / len(self.ae_buffer)
 
             if severe_ae_rate > self.safety_threshold:
+                # We can't easily pass 'recent_aes' without a conversion,
+                # but let's keep it compatible for the alert call
+                recent_aes = [e for _, e in self.ae_buffer]
                 await self.trigger_safety_alert(severe_ae_rate, recent_aes)
 
     async def trigger_safety_alert(self, rate: float, events: List[Dict]):
