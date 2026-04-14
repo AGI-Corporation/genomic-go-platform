@@ -1,0 +1,3 @@
+## 2025-05-15 - [Sliding Window Optimization for Real-Time Event Streams]
+**Learning:** Unbounded list growth for event buffers is a performance anti-pattern that leads to $O(N^2)$ processing time and memory leaks. In high-frequency event streams like clinical trial adverse events, re-parsing timestamps and re-summing statistics on every event causes massive latency spikes as the buffer grows.
+**Action:** Always prefer `collections.deque` for event buffers. Use a sliding window approach with running aggregations (e.g., `severe_count`) and store parsed data (like timestamps) in the deque to achieve $O(1)$ amortized complexity and stable memory usage.
