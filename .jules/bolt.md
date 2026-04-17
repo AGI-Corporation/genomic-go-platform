@@ -1,0 +1,3 @@
+## 2025-05-14 - Optimize real-time safety monitoring sliding window
+**Learning:** The previous implementation of `SafetyMonitoringSystem.process_adverse_event` used a list comprehension and a full scan of the buffer on every new event, resulting in O(N²) complexity and a memory leak as the buffer grew indefinitely. Replacing this with a `collections.deque` and an incremental sliding window (pruning expired events from the front) reduced the amortized cost per event to O(1) and capped memory usage.
+**Action:** Prefer `collections.deque` with running aggregates for any real-time stream processing or rolling window calculations to maintain constant-time performance and prevent unbounded buffer growth.
