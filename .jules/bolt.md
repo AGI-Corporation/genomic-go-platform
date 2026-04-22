@@ -1,0 +1,3 @@
+## 2026-02-14 - [Performance Optimization of SafetyMonitoringSystem]
+**Learning:** Unbounded list growth and redundant O(n) operations in high-frequency event loops (like adverse event processing) create significant performance bottlenecks and memory leaks. Using `collections.deque` for O(1) removals from the front and maintaining running aggregations (like `severe_count`) transforms O(n) complexity into O(1) amortized.
+**Action:** Always prefer `collections.deque` with sliding window pruning for event buffers. Maintain running counters for frequently used metrics to avoid re-scanning the buffer. Ensure consistent timezone handling (UTC) to prevent runtime `TypeErrors` during datetime comparisons.
