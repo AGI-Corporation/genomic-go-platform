@@ -1,0 +1,3 @@
+## 2026-04-25 - [Optimize SafetyMonitoringSystem event processing]
+**Learning:** (N)$ sliding window calculation over an unbounded list (using repeated timestamp parsing and filtering) is a major bottleneck in high-frequency event streams. Using `collections.deque` for (1)$ removals and maintaining running aggregations (e.g., `severe_count`) reduces complexity to (1)$ amortized per event. Also, robustly handling naive vs aware datetimes is critical when parsing external ISO strings to prevent runtime TypeErrors.
+**Action:** Always prefer `collections.deque` and running counters for rolling window metrics. Pre-parse timestamps on ingestion and ensure UTC awareness immediately.
