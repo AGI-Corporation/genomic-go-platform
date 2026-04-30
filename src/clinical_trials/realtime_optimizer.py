@@ -14,6 +14,7 @@ Version: 1.0.0
 """
 
 import asyncio
+import collections
 import json
 import logging
 import uuid
@@ -311,7 +312,8 @@ class SafetyMonitoringSystem:
     def __init__(self, trial_id: str, safety_threshold: float = 0.15):
         self.trial_id = trial_id
         self.safety_threshold = safety_threshold
-        self.ae_buffer = []
+        self.ae_buffer = collections.deque()  # (timestamp, event_dict)
+        self.severe_count = 0
         self.alert_history = []
 
     async def monitor_adverse_event_stream(self, kafka_topic: str = "adverse-events"):
@@ -338,22 +340,31 @@ class SafetyMonitoringSystem:
 
     async def process_adverse_event(self, event: Dict):
         """Process single AE and check for safety signals"""
-        self.ae_buffer.append(event)
+        # Parse timestamp once
+        event_time = datetime.fromisoformat(event["timestamp"])
+        if event_time.tzinfo is None:
+            event_time = event_time.replace(tzinfo=timezone.utc)
 
-        # Calculate rolling AE rate
-        recent_aes = [
-            e
-            for e in self.ae_buffer
-            if datetime.fromisoformat(e["timestamp"])
-            > datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=7)
-        ]
+        # Add to buffer
+        self.ae_buffer.append((event_time, event))
+        if event.get("severity", 0) >= 3:
+            self.severe_count += 1
 
-        if len(recent_aes) > 10:  # Minimum for statistical power
-            severe_ae_rate = sum(1 for e in recent_aes if e["severity"] >= 3) / len(
-                recent_aes
-            )
+        # Prune old events (older than 7 days) - O(1) amortized
+        cutoff_time = datetime.now(timezone.utc) - timedelta(days=7)
+
+        while self.ae_buffer and self.ae_buffer[0][0] < cutoff_time:
+            old_time, old_event = self.ae_buffer.popleft()
+            if old_event.get("severity", 0) >= 3:
+                self.severe_count -= 1
+
+        # Calculate rolling AE rate - O(1)
+        if len(self.ae_buffer) > 10:  # Minimum for statistical power
+            severe_ae_rate = self.severe_count / len(self.ae_buffer)
 
             if severe_ae_rate > self.safety_threshold:
+                # Extract dicts for alert system compatibility
+                recent_aes = [e[1] for e in self.ae_buffer]
                 await self.trigger_safety_alert(severe_ae_rate, recent_aes)
 
     async def trigger_safety_alert(self, rate: float, events: List[Dict]):
