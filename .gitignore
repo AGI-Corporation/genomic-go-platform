@@ -214,3 +214,6 @@ webapp/backend/serve_all.py
 
 # website runtime
 website/backend/submissions.jsonl
+
+website-app/node_modules/
+website-app/.next/
