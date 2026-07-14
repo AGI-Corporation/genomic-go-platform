@@ -205,3 +205,15 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# webapp build artifacts
+webapp/frontend/node_modules/
+webapp/frontend/dist/
+webapp/backend/.venv/
+webapp/backend/serve_all.py
+
+# website runtime
+website/backend/submissions.jsonl
+
+website-app/node_modules/
+website-app/.next/

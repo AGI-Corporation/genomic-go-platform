@@ -1,0 +1,13 @@
+.next
+node_modules
+dist
+coverage
+.env
+.env.local
+.DS_Store
+*.tsbuildinfo
+.playwright-cli
+.chrome-mcp-profile
+output
+.data
+generated
